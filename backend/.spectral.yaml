@@ -1,0 +1,13 @@
+extends: ["spectral:oas"]
+rules:
+  operation-success-response: error
+  operation-operationId: error
+  operation-tags: error
+  operation-description: off
+  florence-error-schema:
+    description: Every path operation must document a default RFC 9457 error response.
+    severity: error
+    given: "$.paths[*][get,post,put,patch,delete].responses"
+    then:
+      field: default
+      function: truthy

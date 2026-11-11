@@ -1,0 +1,3961 @@
+openapi: 3.1.0
+info:
+  title: Florence API
+  version: 0.2.0-draft
+  summary: Backend for the Florence PWA, shared with the Telegram and WhatsApp bots.
+  description: |
+    Contract for the Florence chat client (exam prep first). Draft for review: nothing here is built yet.
+
+    Conventions
+    - Errors are RFC 9457 `application/problem+json` with a stable `code`.
+    - Lists use opaque cursors.
+    - Anything that spends tokens is charged on start and refunded exactly once on failure.
+      The refund rule is enforced server side; clients only see `refunded: true`.
+    - `Idempotency-Key` is required where a retry could double-charge.
+    - Authentication endpoints accept an optional bearer token. With one, the proven identity is
+      linked to the signed-in account. Without one, it signs in (or creates an account).
+
+    See `docs/data-model.md` for tables, token rules and the merge algorithm.
+  contact:
+    name: Florence engineering
+    email: engineering@florence.example
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: https://api.florence.example
+    description: Placeholder host. Replace once the domain is chosen.
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Sign in and sign up with Telegram, WhatsApp, email or Google. Also links extra identities when called with a session.
+  - name: Account
+    description: The signed-in account, its linked identities, student status and notification preferences.
+  - name: Tokens
+    description: Balance, ledger and top-ups.
+  - name: Chat
+    description: Conversations and streamed replies from Florence.
+  - name: Home
+    description: The Home screen and the Fact of the Day.
+  - name: Study
+    description: Study sessions in four modes (quiz, flashcards, fill in the blank, mock exam), answers and results.
+  - name: Progress
+    description: Overview and mastery per course.
+  - name: Streak
+    description: Study days, streak, freezes and win back. Server side, Africa/Lagos time.
+  - name: Leaderboard
+    description: Opt-in weekly boards per course and per campus.
+  - name: Wrapped
+    description: Monthly and yearly recaps with share images.
+  - name: Profile
+    description: School, department, level, exam date and courses.
+  - name: Guest
+    description: Three free questions from the website before sign-up.
+  - name: Library
+    description: Files the student saved for reuse in chat and prep.
+  - name: Push
+    description: Web Push subscriptions.
+  - name: Internal
+    description: Called by the Telegram and WhatsApp bots only. Not for browsers.
+  - name: System
+    description: Health.
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/health:
+    get:
+      tags: [System]
+      operationId: getHealth
+      summary: Liveness check
+      description: Returns 200 when the process can serve requests. Does not touch the database.
+      security: []
+      responses:
+        '200':
+          description: Alive.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+              example:
+                status: ok
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Auth
+  /v1/auth/telegram/oidc:
+    post:
+      tags: [Auth]
+      operationId: signInWithTelegramOidc
+      summary: Finish Log in with Telegram (OIDC code flow)
+      description: |
+        The browser runs the authorization code flow with PKCE (S256) against `oauth.telegram.org`
+        using the scopes `openid profile`. It then sends the code here. The API exchanges it using
+        the bot's client id and secret (HTTP Basic), verifies the `id_token` against Telegram's
+        JWKS (`iss`, `aud` equal to the bot id, `exp`), and keys the identity on the `id` claim,
+        which matches the bot's `ctx.from.id`.
+
+        With a bearer token the identity is linked instead of signing in.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramOidcRequest'
+            example:
+              code: 4f1c9a0e-2b7d-4d8e-9c53-6a1f0d2b7e11
+              codeVerifier: dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+              redirectUri: https://app.florence.example/auth/telegram/callback
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSession'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/IdentityConflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/challenges:
+    post:
+      tags: [Auth]
+      operationId: createAuthChallenge
+      summary: Start a Telegram deep link or WhatsApp code login
+      description: |
+        Returns two values. `challengeId` is a secret that only this browser keeps, used to poll
+        and redeem. `code` is the short text that travels through the messaging app. Someone who
+        sees the code cannot redeem the session.
+
+        For `telegram` the user opens `deepLink` and presses Start. For `whatsapp` the user opens
+        `deepLink` (a `wa.me` link with the code prefilled) and sends the message. The bot then
+        calls the internal claim endpoint with the sender's verified id.
+
+        `intent: link` requires a bearer token.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeRequest'
+            example:
+              channel: whatsapp
+              intent: signin
+      responses:
+        '201':
+          description: Challenge created. Valid for 10 minutes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Challenge'
+              example:
+                challengeId: Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MGFiY2RlZmdoaWo
+                code: FLO-482913
+                deepLink: https://wa.me/2348000000000?text=FLO-482913
+                expiresAt: '2026-11-10T21:10:00Z'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/challenges/{challengeId}:
+    get:
+      tags: [Auth]
+      operationId: getAuthChallengeStatus
+      summary: Poll a challenge
+      description: Returns only the status. Poll every 2 seconds. The session is never returned here.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ChallengeId'
+      responses:
+        '200':
+          description: Current status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeStatus'
+              example:
+                status: pending
+                expiresAt: '2026-11-10T21:10:00Z'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/challenges/{challengeId}/redeem:
+    post:
+      tags: [Auth]
+      operationId: redeemAuthChallenge
+      summary: Exchange a verified challenge for a session
+      description: |
+        Works once. A second call returns 409 `challenge_already_redeemed`. Returns 409
+        `challenge_pending` if the bot has not claimed it yet.
+
+        With a bearer token and a challenge created with `intent: link`, the identity is attached
+        to the account and the response still carries a fresh session.
+      security:
+        - {}
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ChallengeId'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSession'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/IdentityConflict'
+        '410':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/email/start:
+    post:
+      tags: [Auth]
+      operationId: startEmailAuth
+      summary: Send a 6-digit sign-in code
+      description: |
+        Always answers 202, whether or not the address has an account, so the endpoint cannot be
+        used to list users. Limits: 3 sends per hour per address, 10 per hour per IP.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+            example:
+              email: ada@student.unilag.edu.ng
+      responses:
+        '202':
+          description: Accepted. A code is on its way if the address can receive mail.
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/email/verify:
+    post:
+      tags: [Auth]
+      operationId: verifyEmailAuth
+      summary: Confirm the 6-digit code
+      description: Five wrong attempts lock the code. The user must request a new one.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+            example:
+              email: ada@student.unilag.edu.ng
+              code: '482913'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSession'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/IdentityConflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/google:
+    post:
+      tags: [Auth]
+      operationId: signInWithGoogle
+      summary: Sign in with a Google ID token
+      description: |
+        If the token carries an `hd` claim that matches a known institution domain, the caller
+        also becomes a verified student with no email round trip.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken:
+                  type: string
+                  minLength: 20
+            example:
+              idToken: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NSJ9.c2ln
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSession'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/IdentityConflict'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshSession
+      summary: Rotate the refresh cookie and get a new access token
+      description: |
+        Reads the `flo_rt` cookie. The old refresh token stops working. Presenting an already
+        rotated token revokes the whole token family and answers 401 `refresh_reuse_detected`.
+      security:
+        - refreshCookie: []
+      responses:
+        '200':
+          description: New access token. A new `flo_rt` cookie is set.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetRefreshCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+              example:
+                accessToken: eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2NfMSJ9.c2ln
+                expiresIn: 900
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Revoke the current refresh token family
+      security:
+        - refreshCookie: []
+      responses:
+        '204':
+          description: Signed out. The `flo_rt` cookie is cleared.
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ------------------------------------------------------------- Account
+  /v1/me:
+    get:
+      tags: [Account]
+      operationId: getMe
+      summary: The signed-in account
+      responses:
+        '200':
+          description: The account with its identities, balance and student status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+              example:
+                id: 0b6f2c52-7f1d-4c1e-9d0a-4a3b8f2e9c10
+                displayName: Ada
+                username: null
+                tokenBalance: 24
+                identities:
+                  - id: 7d9a8c3e-5b21-4f6a-8c0e-1d2b3a4c5d6e
+                    provider: telegram
+                    display: '@ada_o'
+                    verifiedAt: '2026-11-10T20:00:00Z'
+                student:
+                  status: none
+                createdAt: '2026-11-10T20:00:00Z'
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    patch:
+      tags: [Account]
+      operationId: updateMe
+      summary: Change display name or username
+      description: Username is optional and unique. Send `null` to clear it. It is a handle for display, never used to sign in.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              additionalProperties: false
+              properties:
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                username:
+                  type: [string, 'null']
+                  pattern: '^[a-z0-9_]{3,24}$'
+                timezone:
+                  type: string
+                  description: IANA timezone, used for reminders.
+            example:
+              username: ada_o
+      responses:
+        '200':
+          description: Updated account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+              example:
+                id: 0b6f2c52-7f1d-4c1e-9d0a-4a3b8f2e9c10
+                displayName: Ada
+                username: ada_o
+                tokenBalance: 24
+                identities: []
+                student:
+                  status: none
+                createdAt: '2026-11-10T20:00:00Z'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/identities/{identityId}:
+    delete:
+      tags: [Account]
+      operationId: unlinkIdentity
+      summary: Unlink an identity
+      description: |
+        Refused with 409 `last_identity` if it is the only one. Unlinking does not touch the
+        welcome grant guard, so relinking cannot mint tokens again.
+      parameters:
+        - name: identityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Unlinked.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/merge:
+    post:
+      tags: [Account]
+      operationId: mergeAccounts
+      summary: Merge another account into this one
+      description: |
+        `mergeToken` comes from a 409 `identity_belongs_to_other_account` response and is valid
+        for 10 minutes. The signed-in account survives. Balances are summed with `merge_in` and
+        `merge_out` ledger rows. Conversations, files, transactions, prep sessions and push
+        subscriptions move to the survivor. The whole operation is one transaction.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mergeToken]
+              properties:
+                mergeToken:
+                  type: string
+            example:
+              mergeToken: mrg_3QeM8r1sXk
+      responses:
+        '200':
+          description: Merged. Returns the surviving account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+              example:
+                id: 0b6f2c52-7f1d-4c1e-9d0a-4a3b8f2e9c10
+                displayName: Ada
+                username: null
+                tokenBalance: 31
+                identities: []
+                student:
+                  status: none
+                createdAt: '2026-11-10T20:00:00Z'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '410':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/student/verify/start:
+    post:
+      tags: [Account]
+      operationId: startStudentVerification
+      summary: Send a code to a school email address
+      description: |
+        The domain must belong to a known institution. Unknown domains answer 422
+        `unknown_institution` and are queued for manual review. Addresses are canonicalised
+        (lowercase, `+tag` stripped) and each canonical address earns the bonus once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [schoolEmail]
+              properties:
+                schoolEmail:
+                  type: string
+                  format: email
+                  maxLength: 254
+            example:
+              schoolEmail: ada@student.unilag.edu.ng
+      responses:
+        '202':
+          description: Accepted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/student/verify/confirm:
+    post:
+      tags: [Account]
+      operationId: confirmStudentVerification
+      summary: Confirm the school email code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [schoolEmail, code]
+              properties:
+                schoolEmail:
+                  type: string
+                  format: email
+                  maxLength: 254
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+            example:
+              schoolEmail: ada@student.unilag.edu.ng
+              code: '482913'
+      responses:
+        '200':
+          description: Verified. The student bonus, if any, is in the ledger.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+              example:
+                status: verified
+                institution: University of Lagos
+                verifiedAt: '2026-11-10T20:30:00Z'
+                expiresAt: '2027-11-10T20:30:00Z'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/notification-preferences:
+    get:
+      tags: [Account]
+      operationId: getNotificationPreferences
+      summary: Where and when Florence nudges you
+      responses:
+        '200':
+          description: Current preferences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+              example:
+                channel: web_push
+                dailyReminder: true
+                reminderLocalTime: '18:00'
+                streakNudges: true
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    put:
+      tags: [Account]
+      operationId: setNotificationPreferences
+      summary: Replace notification preferences
+      description: |
+        Choosing `telegram` or `whatsapp` requires a linked identity of that kind (422
+        `channel_not_linked` otherwise). WhatsApp messages outside the 24-hour window need an
+        approved template and cost money, so default web-only accounts to `web_push`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferences'
+            example:
+              channel: telegram
+              dailyReminder: true
+              reminderLocalTime: '07:30'
+              streakNudges: false
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+              example:
+                channel: telegram
+                dailyReminder: true
+                reminderLocalTime: '07:30'
+                streakNudges: false
+        '401':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # -------------------------------------------------------------- Tokens
+  /v1/tokens:
+    get:
+      tags: [Tokens]
+      operationId: getTokenBalance
+      summary: Current balance
+      description: The same number as `tokenBalance` on the account. Cheap enough to poll after a purchase.
+      responses:
+        '200':
+          description: Balance.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [balance]
+                properties:
+                  balance:
+                    type: integer
+                    minimum: 0
+              example:
+                balance: 24
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/tokens/ledger:
+    get:
+      tags: [Tokens]
+      operationId: listLedger
+      summary: Every grant, charge and refund, newest first
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page of ledger entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerPage'
+              example:
+                items:
+                  - id: 981
+                    delta: -1
+                    reason: chat_charge
+                    balanceAfter: 24
+                    createdAt: '2026-11-10T20:40:00Z'
+                nextCursor: null
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/tokens/bundles:
+    get:
+      tags: [Tokens]
+      operationId: listBundles
+      summary: Token bundles for sale
+      security: []
+      responses:
+        '200':
+          description: Bundles, priced in naira.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bundle'
+              example:
+                items:
+                  - id: b_1000
+                    amountNaira: 1000
+                    tokens: 10
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/tokens/purchases:
+    post:
+      tags: [Tokens]
+      operationId: createPurchase
+      summary: Start a Paystack payment
+      description: |
+        Returns a Paystack authorization URL. Tokens arrive through the Paystack webhook, never
+        through the client. A retry with the same `Idempotency-Key` returns the same purchase.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bundleId]
+              properties:
+                bundleId:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                  description: Receipt address. Defaults to the account's verified email if it has one.
+                method:
+                  type: string
+                  enum: [card, bank_transfer]
+                  default: card
+            example:
+              bundleId: b_1000
+      responses:
+        '201':
+          description: Purchase created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Purchase'
+              example:
+                reference: FLO-PAY-1731270000-8123
+                status: pending
+                authorizationUrl: https://checkout.paystack.com/abc123
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/tokens/purchases/{reference}:
+    get:
+      tags: [Tokens]
+      operationId: getPurchase
+      summary: Purchase status
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Purchase'
+              example:
+                reference: FLO-PAY-1731270000-8123
+                status: success
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Chat
+  /v1/conversations:
+    get:
+      tags: [Chat]
+      operationId: listConversations
+      summary: Conversation history, newest first
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conversation'
+                  nextCursor:
+                    type: [string, 'null']
+              example:
+                items:
+                  - id: 3c1a5b7e-9d02-4e68-b1f4-0a7c2d9e8f31
+                    title: Why protein building slows down later
+                    mode: ask
+                    lastMessageAt: '2026-11-10T20:41:00Z'
+                nextCursor: null
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Chat]
+      operationId: createConversation
+      summary: Start an empty conversation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [ask, prep]
+                  default: ask
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+              example:
+                id: 3c1a5b7e-9d02-4e68-b1f4-0a7c2d9e8f31
+                title: null
+                mode: ask
+                lastMessageAt: null
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/conversations/{conversationId}:
+    patch:
+      tags: [Chat]
+      operationId: renameConversation
+      summary: Rename a conversation
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+            example:
+              title: Cell respiration revision
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+              example:
+                id: 3c1a5b7e-9d02-4e68-b1f4-0a7c2d9e8f31
+                title: Cell respiration revision
+                mode: ask
+                lastMessageAt: '2026-11-10T20:41:00Z'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [Chat]
+      operationId: deleteConversation
+      summary: Delete a conversation and its messages
+      description: Library files are not deleted.
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/conversations/{conversationId}/messages:
+    get:
+      tags: [Chat]
+      operationId: listMessages
+      summary: Messages in a conversation, oldest first
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  nextCursor:
+                    type: [string, 'null']
+              example:
+                items:
+                  - id: 5e2d7a90-1c34-4b8f-a6d2-9f0e1b3c4d58
+                    role: user
+                    text: Why does protein building slow down later?
+                    citations: []
+                    charged: 1
+                    createdAt: '2026-11-10T20:40:00Z'
+                nextCursor: null
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Chat]
+      operationId: sendMessage
+      summary: Send a message and stream Florence's reply
+      description: |
+        Responds with `text/event-stream`. Cost is 1 token for text and 2 when `fileIds` is
+        non-empty, charged before the model call starts. If the stream fails before `message.end`,
+        the charge is refunded once and the `error` event carries `refunded: true`.
+
+        Events, in order:
+        - `message.start`: `{messageId, charged, balance}`
+        - `delta`: `{text}`, repeated
+        - `citation`: `{fileId, label, page, snippet}`, zero or more
+        - `message.end`: `{messageId, balance, grounded}`. `grounded: false` means the answer is not in the student's notes.
+        - `error`: `{code, refunded, balance}`, instead of `message.end`
+
+        Math arrives inside `delta` text as `$$...$$` blocks for the client to render.
+
+        Replaying a request with the same `Idempotency-Key` returns the stored result as a
+        single non-streamed JSON `Message` (200, `application/json`) and does not charge again.
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKeyRequired'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+            example:
+              text: Why does protein building slow down later?
+              fileIds:
+                - 8a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+      responses:
+        '200':
+          description: Server-sent event stream, or the stored `Message` on an idempotent replay.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE frames. See the operation description for event names and payloads.
+              example: |
+                event: message.start
+                data: {"messageId":"5e2d7a90-1c34-4b8f-a6d2-9f0e1b3c4d58","charged":2,"balance":22}
+
+                event: delta
+                data: {"text":"Ribosomes need a steady supply of energy."}
+
+                event: message.end
+                data: {"messageId":"5e2d7a90-1c34-4b8f-a6d2-9f0e1b3c4d58","balance":22}
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                id: 5e2d7a90-1c34-4b8f-a6d2-9f0e1b3c4d58
+                role: assistant
+                text: Ribosomes need a steady supply of energy.
+                citations: []
+                charged: 2
+                createdAt: '2026-11-10T20:41:00Z'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '402':
+          $ref: '#/components/responses/InsufficientTokens'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ------------------------------------------------------------ Study sessions
+  /v1/sessions:
+    get:
+      tags: [Study]
+      operationId: listSessions
+      summary: Past and open sessions, newest first
+      description: Feeds Session history (E04). Filter by mode or status.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: mode
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/StudyMode'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, completed]
+      responses:
+        '200':
+          description: One page.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+                  nextCursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Study]
+      operationId: createSession
+      summary: Start a study session from library material
+      description: |
+        Answers 202 with `status: generating`. Poll the session until it is `active`. One open
+        session per account: starting another closes the first. Nothing is charged here. The price
+        is worked out when the session completes, and `estimatedCost` shows the likely figure.
+
+        `422 mode_not_possible` when the material cannot support the mode (screen M14), for
+        example flashcards from a file with no readable text.
+
+        Open decision: charging at completion lets a student abandon unpaid.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+            example:
+              mode: quiz
+              fileIds:
+                - 8a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+              questionCount: 10
+      responses:
+        '202':
+          description: Accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/sessions/{sessionId}:
+    get:
+      tags: [Study]
+      operationId: getSession
+      summary: Session state
+      description: |
+        Items never include the correct answer. It arrives with each verdict. Flashcard items carry
+        their `back` text because the student flips the card themselves.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: The session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [Study]
+      operationId: exitSession
+      summary: Leave a session early
+      description: |
+        Releases any files held for the session. Answers already given stay counted for the study
+        day. Unanswered items cost nothing.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '204':
+          description: Session closed.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/sessions/{sessionId}/mode:
+    patch:
+      tags: [Study]
+      operationId: switchSessionMode
+      summary: Switch study mode mid-session
+      description: |
+        Keeps the same material and the answers already given. Remaining items are rebuilt in the
+        new mode. Screen M03. `422 mode_not_possible` as on create.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode]
+              properties:
+                mode:
+                  $ref: '#/components/schemas/StudyMode'
+            example:
+              mode: flashcards
+      responses:
+        '200':
+          description: The session in its new mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/sessions/{sessionId}/answers:
+    post:
+      tags: [Study]
+      operationId: submitAnswer
+      summary: Answer one item and get the verdict
+      description: |
+        Send `answer` for text, choice and fill-the-gap items, or `outcome` for flashcards. Send
+        `dontKnow: true` for the "I don't know" path (C21). Theory answers are marked by the model
+        and can take a few seconds (C17).
+
+        Offline use: `answeredAt` is when the student actually answered. The server counts the
+        answer for the Lagos day it was answered, if it arrives within 48 hours. Older answers get
+        `422 answer_too_old`. An `answeredAt` in the future is replaced by server time. Streak and
+        leaderboard maths always use server time for everything else.
+
+        A retry with the same `Idempotency-Key` returns the stored verdict.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+        - $ref: '#/components/parameters/IdempotencyKeyRequired'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnswerRequest'
+            example:
+              itemId: 2
+              answer: ATP production through cellular respiration
+              answeredAt: '2026-11-11T09:15:00Z'
+      responses:
+        '200':
+          description: Verdict with explanations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Verdict'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/sessions/{sessionId}/complete:
+    post:
+      tags: [Study]
+      operationId: completeSession
+      summary: Finish the session
+      description: |
+        Charges once, counts the session toward the study day, and returns the streak effect. A
+        second call returns the same result and charges nothing. Answers 402 if the balance cannot
+        cover the price, and the session stays open.
+
+        When the session lifts the streak to a multiple of 7, `streakReward` carries the +10 tokens
+        already written to the ledger.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResult'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '402':
+          $ref: '#/components/responses/InsufficientTokens'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/sessions/{sessionId}/mistakes:
+    get:
+      tags: [Study]
+      operationId: listMistakes
+      summary: Items the student got wrong or skipped
+      description: Review mistakes, screen C26. Includes the stored verdict for each.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: The mistakes.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [item, yourAnswer, verdict]
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/SessionItem'
+                        yourAnswer:
+                          type: [string, 'null']
+                        verdict:
+                          $ref: '#/components/schemas/Verdict'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/sessions/{sessionId}/retry:
+    post:
+      tags: [Study]
+      operationId: retryWrongItems
+      summary: Start a new session from the items missed here
+      description: Retry wrong questions, screen C27. Same mode unless the student picks another.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  $ref: '#/components/schemas/StudyMode'
+      responses:
+        '202':
+          description: The new session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/sessions/{sessionId}/share-image:
+    get:
+      tags: [Study]
+      operationId: getSessionShareImage
+      summary: Shareable result card
+      description: Screen E05. A 1080 by 1350 PNG. The score is hidden unless `showScore=true`.
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+        - name: showScore
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The image.
+          content:
+            image/png:
+              schema:
+                type: string
+                contentEncoding: base64
+                contentMediaType: image/png
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ------------------------------------------------------------- Library
+  /v1/files:
+    get:
+      tags: [Library]
+      operationId: listFiles
+      summary: Saved files
+      responses:
+        '200':
+          description: All saved files, at most 20.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    maxItems: 20
+                    items:
+                      $ref: '#/components/schemas/StoredFile'
+              example:
+                items:
+                  - id: 8a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+                    name: BIO 102 - Cell biology notes.pdf
+                    mimeType: application/pdf
+                    sizeBytes: 1843200
+                    kind: document
+                    createdAt: '2026-11-10T20:10:00Z'
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Library]
+      operationId: uploadFile
+      summary: Save a file
+      description: |
+        A PDF, a voice note, or one or more page images, at most 20 MB in total (the limit the Telegram path already enforces). Several page images from the camera (C04) become one material. Saving is free. Reading the material continues in the background: poll `getFile` until `status` is `ready` (C05 to C07) or `failed` (C08).
+        A name that already exists gets `-2` appended. The 21st file answers 409 `library_full`.
+        Files are mirrored to the model provider lazily, on first use in chat or prep.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [pages]
+              properties:
+                pages:
+                  type: array
+                  minItems: 1
+                  maxItems: 30
+                  items:
+                    type: string
+                    contentEncoding: base64
+                    contentMediaType: application/octet-stream
+                courseId:
+                  type: string
+                  description: Attach the material to a course.
+                name:
+                  type: string
+                  maxLength: 120
+                  description: Optional display name. Defaults to the uploaded filename.
+      responses:
+        '201':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoredFile'
+              example:
+                id: 8a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+                name: BIO 102 - Cell biology notes.pdf
+                mimeType: application/pdf
+                sizeBytes: 1843200
+                kind: document
+                createdAt: '2026-11-10T20:10:00Z'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '413':
+          $ref: '#/components/responses/Problem'
+        '415':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/files/{fileId}:
+    get:
+      tags: [Library]
+      operationId: getFile
+      summary: One material with its reading status and topics
+      description: Screens C05 to C08 and C10.
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: The material.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoredFile'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [Library]
+      operationId: deleteFile
+      summary: Delete a saved file
+      description: Also deletes the model-provider mirror if one exists. Conversations that cited the file keep their text.
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/files/{fileId}/content:
+    get:
+      tags: [Library]
+      operationId: getFileContent
+      summary: Download a saved file
+      description: Redirects to a short-lived signed URL. Used by the Sources panel to open a cited page.
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '302':
+          description: Redirect to the signed URL.
+          headers:
+            Location:
+              description: Signed URL, valid for 5 minutes.
+              schema:
+                type: string
+                format: uri
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Push
+  /v1/push/vapid-key:
+    get:
+      tags: [Push]
+      operationId: getVapidKey
+      summary: Public VAPID key for `pushManager.subscribe`
+      security: []
+      responses:
+        '200':
+          description: The key.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [publicKey]
+                properties:
+                  publicKey:
+                    type: string
+              example:
+                publicKey: BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/push/subscriptions:
+    post:
+      tags: [Push]
+      operationId: createPushSubscription
+      summary: Register a browser for Web Push
+      description: |
+        Call this from a tap, after the user grants permission. On iOS the PWA must already be
+        installed to the Home Screen (iOS 16.4 or later). Re-posting the same `endpoint` updates
+        the existing row.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushSubscriptionRequest'
+            example:
+              endpoint: https://fcm.googleapis.com/fcm/send/abc123
+              keys:
+                p256dh: BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM
+                auth: tBHItJI5svbpez7KI4CCXg
+      responses:
+        '201':
+          description: Registered.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id]
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+              example:
+                id: 4b6d8f0a-2c4e-4a68-8b0d-f1a3c5e7d9b2
+        '401':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/push/subscriptions/{subscriptionId}:
+    delete:
+      tags: [Push]
+      operationId: deletePushSubscription
+      summary: Remove a Web Push subscription
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Removed.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Home, progress
+  /v1/home:
+    get:
+      tags: [Home]
+      operationId: getHome
+      summary: Everything the Home screen needs in one call
+      description: |
+        Feeds B01 to B04: streak pill, rank tile, Wrapped teaser, exam countdown, a session to
+        resume, and which empty state applies.
+      responses:
+        '200':
+          description: Home data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Home'
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/progress:
+    get:
+      tags: [Progress]
+      operationId: getProgress
+      summary: Progress overview
+      description: Screen E01. Study days, sessions, accuracy and mastery per course.
+      responses:
+        '200':
+          description: Overview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressOverview'
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/progress/courses/{courseId}:
+    get:
+      tags: [Progress]
+      operationId: getCourseMastery
+      summary: Mastery for one course
+      description: Screen E02. Topics with mastery and how many answers it rests on.
+      parameters:
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: Course mastery.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseMastery'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/facts/today:
+    get:
+      tags: [Home]
+      operationId: getFactOfTheDay
+      summary: Today's Fact of the Day
+      description: Screen B05. The hidden-message mechanic is a client concern. This returns the text.
+      responses:
+        '200':
+          description: The fact.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fact'
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Streak
+  /v1/streak:
+    get:
+      tags: [Streak]
+      operationId: getStreak
+      summary: Streak, today's progress and the month calendar
+      description: |
+        All maths is server side, in Africa/Lagos, on server time.
+
+        - A study day is one finished session in any mode, or 10 questions or cards answered in
+          total that day (Ask questions from the bots count too).
+        - The streak gains 1 on the first study day of each calendar day.
+        - Every student gets 1 freeze each Monday 00:00. It does not stack. A missed day uses it
+          automatically at midnight and shows as `frozen`.
+        - With no freeze the streak pauses. Two finished sessions within 48 hours restore it, and
+          the missed day stays unfilled. After 48 hours the current streak becomes 0. The longest
+          streak never decreases.
+        - The pill shows `at_risk` from 18:00 if today is not yet a study day.
+        - Every 7th streak day writes a `streak_reward` of 10 tokens to the ledger, once per day.
+      parameters:
+        - name: month
+          in: query
+          required: false
+          description: Calendar month to return, `YYYY-MM`. Defaults to the current month.
+          schema:
+            type: string
+            pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+      responses:
+        '200':
+          description: Streak state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Streak'
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Leaderboard
+  /v1/leaderboard:
+    get:
+      tags: [Leaderboard]
+      operationId: getLeaderboard
+      summary: This week's board for a course or campus
+      description: |
+        Score is study days this week (0 to 7), Monday 00:00 to Sunday 23:59 WAT. Ties go to
+        whoever reached the total first. Volume never counts.
+
+        A board opens at 5 opted-in students (`status: not_open`, screen L07). Students who are
+        opted out get their private rank in `you` and are never listed in `entries`.
+      parameters:
+        - name: scope
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [course, campus]
+        - name: courseId
+          in: query
+          required: false
+          description: Required when `scope` is `course`.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The board.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Leaderboard'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/leaderboard/optin:
+    put:
+      tags: [Leaderboard]
+      operationId: setLeaderboardOptIn
+      summary: Join or leave the leaderboards
+      description: |
+        Default is off. The shown name is a display name of 2 to 20 characters, filtered. A name
+        that fails the filter answers 422 `display_name_rejected`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [optedIn]
+              properties:
+                optedIn:
+                  type: boolean
+                displayName:
+                  type: string
+                  minLength: 2
+                  maxLength: 20
+            example:
+              optedIn: true
+              displayName: Ada O
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [optedIn, displayName]
+                properties:
+                  optedIn:
+                    type: boolean
+                  displayName:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/leaderboard/weekly-results:
+    get:
+      tags: [Leaderboard]
+      operationId: getWeeklyResults
+      summary: Last week's result
+      description: Screen L06, shown on Monday.
+      responses:
+        '200':
+          description: Result for the week that just ended.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyResult'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Wrapped
+  /v1/wrapped:
+    get:
+      tags: [Wrapped]
+      operationId: getWrapped
+      summary: Florence Wrapped for a month or a year
+      description: |
+        Monthly recaps are generated on the 1st for the previous month, yearly on 31 Dec. Needs 5
+        study days in the period, otherwise `status: not_ready` (screen W11). A topic is only named
+        strongest or weakest with at least 10 answers behind it. Ask questions asked through the
+        bots count.
+      parameters:
+        - name: period
+          in: query
+          required: true
+          description: '`YYYY-MM` for a month, `YYYY` for a year.'
+          schema:
+            type: string
+            pattern: '^[0-9]{4}(-(0[1-9]|1[0-2]))?$'
+      responses:
+        '200':
+          description: The recap, or why it is not ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wrapped'
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/wrapped/share-image:
+    get:
+      tags: [Wrapped]
+      operationId: getWrappedShareImage
+      summary: A Wrapped card as a 1080 by 1920 image
+      description: |
+        For WhatsApp status and Instagram stories. Brand colours are fixed in light and dark so a
+        shared image always looks the same. The score stays hidden unless `showScore=true`
+        (screen W09).
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]{4}(-(0[1-9]|1[0-2]))?$'
+        - name: card
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [cover, questions, right_wrong, sessions, streak, topics, mode, summary]
+            default: summary
+        - name: showScore
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The image.
+          content:
+            image/png:
+              schema:
+                type: string
+                contentEncoding: base64
+                contentMediaType: image/png
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Profile, courses
+  /v1/schools:
+    get:
+      tags: [Profile]
+      operationId: searchSchools
+      summary: Search the seeded list of schools
+      description: Onboarding step 1 (A07). Schools and their departments are seeded by staff.
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Matching schools.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/School'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/schools/{schoolId}/departments:
+    get:
+      tags: [Profile]
+      operationId: listDepartments
+      summary: Departments of a school
+      description: Onboarding step 2 (A08).
+      security: []
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Departments.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Department'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/profile:
+    put:
+      tags: [Profile]
+      operationId: updateProfile
+      summary: Set school, department, level and exam date
+      description: Onboarding steps 1, 2 and 4 (A07, A08, A10) and Edit school and courses (F02).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/courses:
+    get:
+      tags: [Profile]
+      operationId: listMyCourses
+      summary: Courses the student is enrolled in
+      responses:
+        '200':
+          description: Enrolments.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Enrolment'
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Profile]
+      operationId: enrolInCourse
+      summary: Add a course by code
+      description: |
+        Onboarding step 3 (A09). A course is identified by school plus normalised code
+        (uppercase, spaces and dashes removed), so `bio 102` and `BIO102` at one school are the
+        same course and share a leaderboard. Needs a school on the profile first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  minLength: 2
+                  maxLength: 16
+                title:
+                  type: string
+                  maxLength: 80
+            example:
+              code: BIO 102
+              title: Cell biology
+      responses:
+        '201':
+          description: Enrolled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrolment'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/courses/{courseId}:
+    get:
+      tags: [Profile]
+      operationId: getCourse
+      summary: Course detail with its materials
+      description: Screen C02.
+      parameters:
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: The course.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseDetail'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+    delete:
+      tags: [Profile]
+      operationId: leaveCourse
+      summary: Remove a course from the profile
+      description: Materials stay in the library.
+      parameters:
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '204':
+          description: Removed.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Guest Ask
+  /v1/guest/sessions:
+    post:
+      tags: [Guest]
+      operationId: createGuestSession
+      summary: Start a guest session from the website
+      description: |
+        Screen A02. Returns a guest token and the number of free questions left. The limit is 3
+        per device, also rate-limited by IP. No file uploads.
+      security: []
+      responses:
+        '201':
+          description: Guest session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestSession'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/guest/messages:
+    post:
+      tags: [Guest]
+      operationId: sendGuestMessage
+      summary: Ask a question as a guest and stream the answer
+      description: |
+        Same event stream as `sendMessage`. After the third answer, `message.end` carries
+        `questionsLeft: 0` and the client shows the save prompt (A03). A fourth question answers
+        429 `guest_limit_reached`. Guests are never charged tokens.
+      security:
+        - guestToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+            example:
+              text: Why does protein building slow down later?
+      responses:
+        '200':
+          description: Server-sent event stream. Event names match `sendMessage`.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/guest/claim:
+    post:
+      tags: [Guest]
+      operationId: claimGuestChat
+      summary: Keep the guest chat after signing up
+      description: Called right after sign-in from the save prompt (A03). Moves the guest messages into a conversation on the account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [guestToken]
+              properties:
+                guestToken:
+                  type: string
+      responses:
+        '200':
+          description: The conversation now on the account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ---------------------------------------------------------------- Saved, referral, account, status
+  /v1/messages/{messageId}/saved:
+    put:
+      tags: [Chat]
+      operationId: setMessageSaved
+      summary: Save or unsave an answer
+      description: Saved answers, screen D09.
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [saved]
+              properties:
+                saved:
+                  type: boolean
+      responses:
+        '204':
+          description: Saved state updated.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/saved-answers:
+    get:
+      tags: [Chat]
+      operationId: listSavedAnswers
+      summary: Saved answers, newest saved first
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  nextCursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/referral:
+    get:
+      tags: [Account]
+      operationId: getReferral
+      summary: The student's invite code and link
+      description: Screen F09. The reward size is not decided, so `rewardTokens` can be null.
+      responses:
+        '200':
+          description: Referral state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, link, invitedCount, rewardTokens]
+                properties:
+                  code:
+                    type: string
+                  link:
+                    type: string
+                    format: uri
+                  invitedCount:
+                    type: integer
+                    minimum: 0
+                  rewardTokens:
+                    type: [integer, 'null']
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/export:
+    post:
+      tags: [Account]
+      operationId: requestDataExport
+      summary: Ask for a copy of the account's data
+      description: Screen F13. Answers 202. A link arrives by the chosen notification channel.
+      responses:
+        '202':
+          description: Accepted.
+        '401':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/me/delete:
+    post:
+      tags: [Account]
+      operationId: requestAccountDeletion
+      summary: Delete the account
+      description: |
+        Screen F13. Starts a 7 day grace period. Signing in during it cancels the deletion. After
+        it, identities, conversations, files and sessions are erased and the ledger is anonymised.
+      responses:
+        '202':
+          description: Scheduled.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deletesAt]
+                properties:
+                  deletesAt:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/status:
+    get:
+      tags: [System]
+      operationId: getServiceStatus
+      summary: Maintenance flag and client version gate
+      description: Screens G07 (update available) and G08 (maintenance). Checked on launch and on resume.
+      security: []
+      responses:
+        '200':
+          description: Status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [maintenance, minClientVersion, latestClientVersion]
+                properties:
+                  maintenance:
+                    type: boolean
+                  message:
+                    type: [string, 'null']
+                  minClientVersion:
+                    type: string
+                  latestClientVersion:
+                    type: string
+        default:
+          $ref: '#/components/responses/Problem'
+
+  # ------------------------------------------------------------ Internal
+  /internal/v1/auth/challenges/claim:
+    post:
+      tags: [Internal]
+      operationId: claimAuthChallenge
+      summary: Bot reports who sent the challenge code
+      description: |
+        Called by the Telegram bot's `/start login_<code>` handler (with `ctx.from.id`) and by the
+        WhatsApp webhook (with the sender's `wa_id`). The caller has already authenticated the
+        platform request: the bots must verify Telegram's secret token header and Meta's
+        `X-Hub-Signature-256` before calling this. The API trusts `providerUserId` completely.
+
+        Answers 404 for an unknown or expired code, so bots can reply "that code expired".
+      security:
+        - serviceKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+            example:
+              code: FLO-482913
+              provider: whatsapp
+              providerUserId: '2348012345678'
+              displayName: Ada
+      responses:
+        '200':
+          description: Claimed. The browser's next poll sees `verified`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: verified
+              example:
+                status: verified
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /internal/v1/events:
+    post:
+      tags: [Internal]
+      operationId: recordBotEvent
+      summary: A bot reports a question the student asked
+      description: |
+        Every question asked through the Telegram or WhatsApp bot is reported here, so bot activity
+        counts toward study days, the streak and Florence Wrapped. The identity is resolved to an
+        account the same way as sign-in, including importing the legacy balance, so a student who
+        has never opened the app still has a streak.
+
+        `eventId` is an idempotency key. A repeat answers 200 with `accepted: false` and changes
+        nothing. When the event tips today into a study day and the streak reaches a multiple of 7,
+        the 10 token reward is written to the ledger and returned, so the bot can say so.
+      security:
+        - serviceKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BotEvent'
+            example:
+              eventId: 5b1d6c7e-3a2f-4d90-8e11-7a6c5b4d3e2f
+              provider: telegram
+              providerUserId: '123456789'
+              type: ask_question
+              occurredAt: '2026-11-11T09:15:00Z'
+      responses:
+        '200':
+          description: Recorded, or already recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotEventResult'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '422':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /internal/v1/streak:
+    get:
+      tags: [Internal]
+      operationId: getBotStreak
+      summary: Streak summary for the bots' /streak command
+      description: Replaces the streak stored in the Mongo user document. The bots stop computing streaks themselves.
+      security:
+        - serviceKey: []
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [telegram, whatsapp]
+        - name: providerUserId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreakSummary'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '404':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+webhooks:
+  paystackCharge:
+    post:
+      tags: [Tokens]
+      operationId: receivePaystackEvent
+      summary: Paystack event
+      description: |
+        Registered in the Paystack dashboard. The body signature is HMAC SHA512 of the raw body
+        with the secret key, sent in `x-paystack-signature`. On `charge.success` the purchase is
+        marked paid and a `purchase` ledger row is written, once, keyed on the reference. Always
+        answers 200 fast. Paystack retries on anything else.
+      security:
+        - paystackSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event, data]
+              properties:
+                event:
+                  type: string
+                  examples: [charge.success]
+                data:
+                  type: object
+                  required: [reference]
+                  properties:
+                    reference:
+                      type: string
+                    status:
+                      type: string
+            example:
+              event: charge.success
+              data:
+                reference: FLO-PAY-1731270000-8123
+                status: success
+      responses:
+        '200':
+          description: Received.
+        '401':
+          description: Signature mismatch. Nothing is credited.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token, 15 minutes.
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: flo_rt
+      description: Opaque refresh token, 30 days, `httpOnly; Secure; SameSite=Strict`, rotated on every use.
+    serviceKey:
+      type: apiKey
+      in: header
+      name: X-Service-Key
+      description: Shared secret held by the bots. Rotate independently of user tokens.
+    guestToken:
+      type: apiKey
+      in: header
+      name: X-Guest-Token
+      description: Issued by `createGuestSession`. Limits a device to 3 free questions.
+    paystackSignature:
+      type: apiKey
+      in: header
+      name: x-paystack-signature
+
+  headers:
+    SetRefreshCookie:
+      description: Sets `flo_rt` (`httpOnly; Secure; SameSite=Strict; Path=/v1/auth`).
+      schema:
+        type: string
+    RetryAfter:
+      description: Seconds until the next attempt is allowed.
+      schema:
+        type: integer
+        minimum: 1
+
+  parameters:
+    ChallengeId:
+      name: challengeId
+      in: path
+      required: true
+      description: The 256-bit secret returned when the challenge was created.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9_-]{43}$'
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FileId:
+      name: fileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CourseId:
+      name: courseId
+      in: path
+      required: true
+      schema:
+        type: string
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque value from `nextCursor`.
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Client-generated UUID. A retry with the same key returns the original result.
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKeyRequired:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated UUID. A retry with the same key never charges twice.
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Problem:
+      description: Error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://florence.example/problems/not-found
+            title: Not found
+            status: 404
+            code: not_found
+            detail: No such resource.
+            requestId: req_01JC8Q2Z
+    RateLimited:
+      description: Too many requests.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://florence.example/problems/rate-limited
+            title: Too many requests
+            status: 429
+            code: rate_limited
+            detail: Try again in 60 seconds.
+            requestId: req_01JC8Q30
+    InsufficientTokens:
+      description: Not enough tokens. Nothing was charged.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://florence.example/problems/insufficient-tokens
+            title: Not enough tokens
+            status: 402
+            code: insufficient_tokens
+            detail: This needs 2 tokens and the balance is 1.
+            requestId: req_01JC8Q31
+    IdentityConflict:
+      description: |
+        The proven identity already belongs to another account (`identity_belongs_to_other_account`,
+        with a `mergeToken`), or a challenge state conflict (`challenge_pending`,
+        `challenge_already_redeemed`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/MergeConflict'
+          example:
+            type: https://florence.example/problems/identity-belongs-to-other-account
+            title: Identity belongs to another account
+            status: 409
+            code: identity_belongs_to_other_account
+            detail: This Telegram account is already linked elsewhere.
+            requestId: req_01JC8Q32
+            mergeToken: mrg_3QeM8r1sXk
+            mergeTokenExpiresAt: '2026-11-10T20:50:00Z'
+    AuthSession:
+      description: Signed in. A `flo_rt` refresh cookie is set.
+      headers:
+        Set-Cookie:
+          $ref: '#/components/headers/SetRefreshCookie'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthSession'
+          example:
+            accessToken: eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJhY2NfMSJ9.c2ln
+            expiresIn: 900
+            isNewAccount: true
+            welcomeGrant:
+              granted: true
+              tokens: 10
+            account:
+              id: 0b6f2c52-7f1d-4c1e-9d0a-4a3b8f2e9c10
+              displayName: Ada
+              username: null
+              tokenBalance: 10
+              identities:
+                - id: 7d9a8c3e-5b21-4f6a-8c0e-1d2b3a4c5d6e
+                  provider: telegram
+                  display: '@ada_o'
+                  verifiedAt: '2026-11-10T20:00:00Z'
+              student:
+                status: none
+              createdAt: '2026-11-10T20:00:00Z'
+
+  schemas:
+    Problem:
+      type: object
+      description: RFC 9457 problem details plus a stable machine `code`.
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+          description: |
+            Stable, lower_snake_case. Includes `insufficient_tokens`, `rate_limited`,
+            `challenge_expired`, `challenge_pending`, `challenge_already_redeemed`,
+            `identity_belongs_to_other_account`, `last_identity`, `library_full`,
+            `unknown_institution`, `channel_not_linked`, `refresh_reuse_detected`, `not_found`,
+            `mode_not_possible`, `answer_too_old`, `display_name_rejected`, `guest_limit_reached`.
+        detail:
+          type: string
+        requestId:
+          type: string
+    MergeConflict:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            mergeToken:
+              type: string
+              description: Present only for `identity_belongs_to_other_account`.
+            mergeTokenExpiresAt:
+              type: string
+              format: date-time
+
+    TelegramOidcRequest:
+      type: object
+      required: [code, codeVerifier, redirectUri]
+      properties:
+        code:
+          type: string
+        codeVerifier:
+          type: string
+          minLength: 43
+          maxLength: 128
+        redirectUri:
+          type: string
+          format: uri
+          description: Must be registered under Allowed URLs in BotFather and match the authorization request.
+
+    ChallengeRequest:
+      type: object
+      required: [channel]
+      properties:
+        channel:
+          type: string
+          enum: [telegram, whatsapp]
+        intent:
+          type: string
+          enum: [signin, link]
+          default: signin
+    Challenge:
+      type: object
+      required: [challengeId, code, deepLink, expiresAt]
+      properties:
+        challengeId:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{43}$'
+        code:
+          type: string
+          pattern: '^FLO-[0-9]{6}$'
+        deepLink:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+    ChallengeStatus:
+      type: object
+      required: [status, expiresAt]
+      properties:
+        status:
+          type: string
+          enum: [pending, verified, redeemed, expired]
+        expiresAt:
+          type: string
+          format: date-time
+
+    AccessToken:
+      type: object
+      required: [accessToken, expiresIn]
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Seconds.
+          examples: [900]
+    AuthSession:
+      allOf:
+        - $ref: '#/components/schemas/AccessToken'
+        - type: object
+          required: [account, isNewAccount, welcomeGrant]
+          properties:
+            account:
+              $ref: '#/components/schemas/Account'
+            isNewAccount:
+              type: boolean
+            welcomeGrant:
+              type: object
+              description: 'Granted once per account. `granted` is false on every later sign-in.'
+              required: [granted, tokens]
+              properties:
+                granted:
+                  type: boolean
+                tokens:
+                  type: integer
+                  minimum: 0
+
+    Account:
+      type: object
+      required: [id, displayName, username, tokenBalance, identities, student, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        username:
+          type: [string, 'null']
+        tokenBalance:
+          type: integer
+          minimum: 0
+        identities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Identity'
+        student:
+          $ref: '#/components/schemas/Student'
+        profile:
+          $ref: '#/components/schemas/Profile'
+        createdAt:
+          type: string
+          format: date-time
+    Identity:
+      type: object
+      required: [id, provider, display, verifiedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [telegram, whatsapp, email, google]
+        display:
+          type: string
+          description: Safe to show. A handle, or a masked phone or email.
+        verifiedAt:
+          type: string
+          format: date-time
+    Student:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [none, verified, expired]
+        institution:
+          type: string
+        verifiedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+    NotificationPreferences:
+      type: object
+      required: [channel, dailyReminder, reminderLocalTime, streakNudges]
+      properties:
+        channel:
+          type: string
+          enum: [web_push, telegram, whatsapp, none]
+        dailyReminder:
+          type: boolean
+          description: |
+            At most one push a day, only if today is not yet a study day. The copy never mentions
+            loss ("Keep it going", not "You'll lose").
+        reminderLocalTime:
+          type: string
+          description: Default 20:00. Never after 22:00.
+          pattern: '^(([01][0-9]|2[01]):[0-5][0-9]|22:00)$'
+        streakNudges:
+          type: boolean
+        leaderboardUpdates:
+          type: boolean
+        weeklyResults:
+          type: boolean
+
+    LedgerEntry:
+      type: object
+      required: [id, delta, reason, balanceAfter, createdAt]
+      properties:
+        id:
+          type: integer
+        delta:
+          type: integer
+        reason:
+          type: string
+          enum:
+            - welcome_grant
+            - student_bonus
+            - streak_reward
+            - purchase
+            - chat_charge
+            - prep_charge
+            - create_charge
+            - refund
+            - merge_in
+            - merge_out
+            - legacy_import
+            - admin_adjust
+        balanceAfter:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+    LedgerPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerEntry'
+        nextCursor:
+          type: [string, 'null']
+    Bundle:
+      type: object
+      required: [id, amountNaira, tokens]
+      properties:
+        id:
+          type: string
+        amountNaira:
+          type: integer
+          minimum: 1
+        tokens:
+          type: integer
+          minimum: 1
+    Purchase:
+      type: object
+      required: [reference, status]
+      properties:
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [pending, awaiting_transfer, success, failed, expired]
+        authorizationUrl:
+          type: string
+          format: uri
+        transfer:
+          type: object
+          description: Present for bank transfers while `status` is `awaiting_transfer` (screen F07).
+          required: [bankName, accountNumber, accountName, expiresAt]
+          properties:
+            bankName:
+              type: string
+            accountNumber:
+              type: string
+            accountName:
+              type: string
+            expiresAt:
+              type: string
+              format: date-time
+
+    Conversation:
+      type: object
+      required: [id, title, mode, lastMessageAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: [string, 'null']
+        mode:
+          type: string
+          enum: [ask, prep]
+        lastMessageAt:
+          type: [string, 'null']
+          format: date-time
+    SendMessageRequest:
+      type: object
+      anyOf:
+        - required: [text]
+        - required: [voiceFileId]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 8000
+        voiceFileId:
+          type: string
+          format: uuid
+          description: An uploaded voice note (D11). It is transcribed and answered as text.
+        context:
+          type: object
+          description: Set when asking about a question from a session (C23).
+          required: [sessionId, itemId]
+          properties:
+            sessionId:
+              type: string
+              format: uuid
+            itemId:
+              type: integer
+              minimum: 0
+        fileIds:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            format: uuid
+    Citation:
+      type: object
+      required: [fileId, label]
+      properties:
+        fileId:
+          type: string
+          format: uuid
+        label:
+          type: string
+        page:
+          type: integer
+          minimum: 1
+        snippet:
+          type: string
+    Message:
+      type: object
+      required: [id, role, text, citations, charged, createdAt]
+      properties:
+        grounded:
+          type: boolean
+          default: true
+          description: False when the answer could not be found in the student's notes (screen D10).
+        saved:
+          type: boolean
+          default: false
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        text:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        charged:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+
+    StudyMode:
+      type: string
+      enum: [quiz, flashcards, fill_blank, mock_exam]
+    CreateSessionRequest:
+      type: object
+      required: [mode, fileIds]
+      properties:
+        mode:
+          $ref: '#/components/schemas/StudyMode'
+        fileIds:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+            format: uuid
+        topicIds:
+          type: array
+          description: Limit the session to these topics found in the material.
+          items:
+            type: string
+        questionCount:
+          type: integer
+          minimum: 3
+          maximum: 30
+          default: 10
+        timeLimitMinutes:
+          type: integer
+          minimum: 5
+          maximum: 240
+          description: Mock exam only.
+    ItemType:
+      type: string
+      enum: [mcq, true_false, fill_gap, short, theory, calculation, flashcard]
+    ItemState:
+      type: string
+      enum: [unanswered, right, not_quite, partly, skipped]
+    SessionItem:
+      type: object
+      description: One question or card. Never carries the correct answer, except `back` on flashcards.
+      required: [id, type, prompt, marks, difficulty, topic, sourceLabel, state]
+      properties:
+        id:
+          type: integer
+          minimum: 0
+          description: Index in the session.
+        type:
+          $ref: '#/components/schemas/ItemType'
+        prompt:
+          type: string
+        options:
+          type: array
+          description: Present for `mcq`.
+          items:
+            type: string
+        back:
+          type: string
+          description: Present for `flashcard` only.
+        marks:
+          type: integer
+          minimum: 1
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        topic:
+          type: string
+        sourceLabel:
+          type: string
+        state:
+          $ref: '#/components/schemas/ItemState'
+    Session:
+      type: object
+      required: [id, mode, status, requestedCount, generatedCount, currentIndex, items, estimatedCost, switchableModes, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mode:
+          $ref: '#/components/schemas/StudyMode'
+        status:
+          type: string
+          enum: [generating, active, completed, expired]
+        fileIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        requestedCount:
+          type: integer
+        generatedCount:
+          type: integer
+        currentIndex:
+          type: integer
+          minimum: 0
+        round:
+          type: integer
+          minimum: 1
+          description: Flashcards repeat missed cards in rounds (M07).
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionItem'
+        switchableModes:
+          type: array
+          description: Modes this material supports, for the switch sheet (M03).
+          items:
+            $ref: '#/components/schemas/StudyMode'
+        estimatedCost:
+          type: integer
+          minimum: 1
+        timeLimitSeconds:
+          type: integer
+          description: Mock exam only.
+        expiresAt:
+          type: string
+          format: date-time
+    AnswerRequest:
+      type: object
+      required: [itemId, answeredAt]
+      properties:
+        itemId:
+          type: integer
+          minimum: 0
+        answeredAt:
+          type: string
+          format: date-time
+        answer:
+          type: string
+          maxLength: 4000
+        outcome:
+          type: string
+          enum: [know, missed]
+          description: Flashcards.
+        dontKnow:
+          type: boolean
+      anyOf:
+        - required: [answer]
+        - required: [outcome]
+        - required: [dontKnow]
+    Verdict:
+      type: object
+      required: [itemId, result, awardedMarks, maxMarks, correctAnswer]
+      properties:
+        itemId:
+          type: integer
+        result:
+          type: string
+          enum: [right, not_quite, partly, skipped]
+        awardedMarks:
+          type: integer
+          minimum: 0
+        maxMarks:
+          type: integer
+          minimum: 1
+        correctAnswer:
+          type: string
+        whyRight:
+          type: string
+        whyOthersFail:
+          type: array
+          items:
+            type: object
+            required: [option, reason]
+            properties:
+              option:
+                type: string
+              reason:
+                type: string
+        examTip:
+          type: string
+        source:
+          $ref: '#/components/schemas/Citation'
+        studyDay:
+          $ref: '#/components/schemas/StudyDayEffect'
+    StudyDayEffect:
+      type: object
+      description: Whether this call made today a study day.
+      required: [counted, streak]
+      properties:
+        counted:
+          type: boolean
+          description: True once today is a study day, on the call that made it so and after.
+        justEarned:
+          type: boolean
+          description: True only on the call that tipped today into a study day.
+        streak:
+          type: integer
+          minimum: 0
+    SessionResult:
+      type: object
+      required: [id, sessionId, mode, score, total, failedTopics, sourceDocs, charged, balance, studyDay, createdAt]
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+          format: uuid
+        mode:
+          $ref: '#/components/schemas/StudyMode'
+        score:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        failedTopics:
+          type: array
+          items:
+            type: string
+        sourceDocs:
+          type: array
+          items:
+            type: string
+        charged:
+          type: integer
+          minimum: 0
+        balance:
+          type: integer
+          minimum: 0
+        studyDay:
+          $ref: '#/components/schemas/StudyDayEffect'
+        streakReward:
+          type: object
+          description: Present when this session reached a multiple of 7.
+          required: [tokens]
+          properties:
+            tokens:
+              type: integer
+              examples: [10]
+        createdAt:
+          type: string
+          format: date-time
+
+    StoredFile:
+      type: object
+      required: [id, name, mimeType, sizeBytes, kind, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 0
+          maximum: 20971520
+        kind:
+          type: string
+          enum: [image, document, audio]
+        status:
+          type: string
+          enum: [uploading, reading, ready, failed]
+          default: ready
+          description: Screens C05 to C08. Poll `getFile` until `ready` or `failed`.
+        pageCount:
+          type: integer
+          minimum: 1
+        courseId:
+          type: [string, 'null']
+        topics:
+          type: array
+          description: Found while reading (C07). Empty until `status` is `ready`.
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              pages:
+                type: string
+                examples: ['12-17']
+        error:
+          type: [string, 'null']
+          description: Why reading failed, in words a student can act on.
+        createdAt:
+          type: string
+          format: date-time
+
+    PushSubscriptionRequest:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        endpoint:
+          type: string
+          format: uri
+        keys:
+          type: object
+          required: [p256dh, auth]
+          properties:
+            p256dh:
+              type: string
+            auth:
+              type: string
+
+    ClaimRequest:
+      type: object
+      required: [code, provider, providerUserId]
+      properties:
+        code:
+          type: string
+          pattern: '^FLO-[0-9]{6}$'
+        provider:
+          type: string
+          enum: [telegram, whatsapp]
+        providerUserId:
+          type: string
+          description: Telegram numeric id, or the WhatsApp `wa_id` (digits, no plus).
+        displayName:
+          type: string
+          maxLength: 60
+        username:
+          type: string
+          maxLength: 64
+
+    StreakSummary:
+      type: object
+      required: [current, longest, state, studiedToday]
+      properties:
+        current:
+          type: integer
+          minimum: 0
+        longest:
+          type: integer
+          minimum: 0
+          description: Never decreases.
+        state:
+          type: string
+          enum: [none, active, at_risk, paused]
+        studiedToday:
+          type: boolean
+    Streak:
+      allOf:
+        - $ref: '#/components/schemas/StreakSummary'
+        - type: object
+          required: [todayProgress, freeze, timezone, calendar, rewardProgress]
+          properties:
+            todayProgress:
+              type: object
+              required: [answered, target, sessionsFinished]
+              properties:
+                answered:
+                  type: integer
+                  minimum: 0
+                target:
+                  type: integer
+                  const: 10
+                sessionsFinished:
+                  type: integer
+                  minimum: 0
+            freeze:
+              type: object
+              required: [available, nextAt]
+              properties:
+                available:
+                  type: boolean
+                nextAt:
+                  type: string
+                  format: date-time
+                  description: Next Monday 00:00 in Africa/Lagos.
+            winBack:
+              type: [object, 'null']
+              description: Present while the streak is paused.
+              required: [sessionsDone, sessionsNeeded, expiresAt]
+              properties:
+                sessionsDone:
+                  type: integer
+                  minimum: 0
+                sessionsNeeded:
+                  type: integer
+                  const: 2
+                expiresAt:
+                  type: string
+                  format: date-time
+            timezone:
+              type: string
+              const: Africa/Lagos
+            calendar:
+              type: array
+              items:
+                type: object
+                required: [date, state]
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  state:
+                    type: string
+                    enum: [studied, frozen, missed, today, upcoming]
+            rewardProgress:
+              type: object
+              required: [daysToNextReward, tokens]
+              properties:
+                daysToNextReward:
+                  type: integer
+                  minimum: 0
+                tokens:
+                  type: integer
+                  const: 10
+
+    Home:
+      type: object
+      required: [variant, streak]
+      properties:
+        variant:
+          type: string
+          description: Which Home state to draw (B01 today, B02 new user, B03 chats but no notes, B04 exam week).
+          enum: [today, new_user, chats_no_notes, exam_week]
+        streak:
+          $ref: '#/components/schemas/StreakSummary'
+        rank:
+          type: [object, 'null']
+          required: [scope, rank, studyDays]
+          properties:
+            scope:
+              type: string
+              enum: [course, campus]
+            rank:
+              type: integer
+              minimum: 1
+            studyDays:
+              type: integer
+              minimum: 0
+        wrappedTeaser:
+          type: [object, 'null']
+          required: [period, ready]
+          properties:
+            period:
+              type: string
+            ready:
+              type: boolean
+        exam:
+          type: [object, 'null']
+          required: [courseId, courseCode, date, daysLeft]
+          properties:
+            courseId:
+              type: string
+            courseCode:
+              type: string
+            date:
+              type: string
+              format: date
+            daysLeft:
+              type: integer
+        resume:
+          type: [object, 'null']
+          required: [sessionId, mode, answered, total]
+          properties:
+            sessionId:
+              type: string
+              format: uuid
+            mode:
+              $ref: '#/components/schemas/StudyMode'
+            answered:
+              type: integer
+            total:
+              type: integer
+    ProgressOverview:
+      type: object
+      required: [studyDaysLast30, sessions, accuracy, courses]
+      properties:
+        studyDaysLast30:
+          type: integer
+          minimum: 0
+        sessions:
+          type: integer
+          minimum: 0
+        accuracy:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+        courses:
+          type: array
+          items:
+            type: object
+            required: [courseId, code, mastery]
+            properties:
+              courseId:
+                type: string
+              code:
+                type: string
+              mastery:
+                type: [integer, 'null']
+                minimum: 0
+                maximum: 100
+    CourseMastery:
+      type: object
+      required: [course, mastery, topics]
+      properties:
+        course:
+          $ref: '#/components/schemas/Course'
+        mastery:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopicMastery'
+    TopicMastery:
+      type: object
+      required: [id, name, mastery, answered]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mastery:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+        answered:
+          type: integer
+          minimum: 0
+    Fact:
+      type: object
+      required: [id, date, text]
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          format: date
+        text:
+          type: string
+        topic:
+          type: string
+
+    Leaderboard:
+      type: object
+      required: [scope, status, optedIn, optedInCount, minToOpen, week, entries, you]
+      properties:
+        scope:
+          type: string
+          enum: [course, campus]
+        courseId:
+          type: string
+        status:
+          type: string
+          enum: [open, not_open]
+        optedIn:
+          type: boolean
+        optedInCount:
+          type: integer
+          minimum: 0
+        minToOpen:
+          type: integer
+          const: 5
+        week:
+          type: object
+          required: [start, end]
+          properties:
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+        entries:
+          type: array
+          description: Opted-in students only. Empty while the board is not open.
+          items:
+            type: object
+            required: [rank, displayName, studyDays, isYou]
+            properties:
+              rank:
+                type: integer
+                minimum: 1
+              displayName:
+                type: string
+              studyDays:
+                type: integer
+                minimum: 0
+                maximum: 7
+              isYou:
+                type: boolean
+        you:
+          type: object
+          description: The student's own rank, computed even when opted out.
+          required: [rank, studyDays]
+          properties:
+            rank:
+              type: [integer, 'null']
+              minimum: 1
+            studyDays:
+              type: integer
+              minimum: 0
+              maximum: 7
+    WeeklyResult:
+      type: object
+      required: [weekStart, weekEnd, scope, rank, studyDays, optedIn]
+      properties:
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        scope:
+          type: string
+          enum: [course, campus]
+        rank:
+          type: [integer, 'null']
+          minimum: 1
+        studyDays:
+          type: integer
+          minimum: 0
+          maximum: 7
+        optedIn:
+          type: boolean
+
+    Wrapped:
+      type: object
+      required: [period, status, studyDaysInPeriod, studyDaysNeeded]
+      properties:
+        period:
+          type: string
+        status:
+          type: string
+          enum: [ready, not_ready]
+        studyDaysInPeriod:
+          type: integer
+          minimum: 0
+        studyDaysNeeded:
+          type: integer
+          const: 5
+        stats:
+          $ref: '#/components/schemas/WrappedStats'
+    WrappedStats:
+      type: object
+      required: [questionsAsked, answered, right, notQuite, sessions, practiceMinutes, longestStreak, mostUsedMode]
+      properties:
+        questionsAsked:
+          type: integer
+          minimum: 0
+          description: Ask questions, from the app and from the bots.
+        answered:
+          type: integer
+          minimum: 0
+        right:
+          type: integer
+          minimum: 0
+        notQuite:
+          type: integer
+          minimum: 0
+        sessions:
+          type: integer
+          minimum: 0
+        practiceMinutes:
+          type: integer
+          minimum: 0
+        longestStreak:
+          type: integer
+          minimum: 0
+          description: Longest streak inside the period.
+        strongestTopic:
+          type: [object, 'null']
+          description: Null below 10 answers.
+          required: [name, accuracy]
+          properties:
+            name:
+              type: string
+            accuracy:
+              type: integer
+              minimum: 0
+              maximum: 100
+        weakestTopic:
+          type: [object, 'null']
+          description: Null below 10 answers.
+          required: [name, accuracy]
+          properties:
+            name:
+              type: string
+            accuracy:
+              type: integer
+              minimum: 0
+              maximum: 100
+        mostUsedMode:
+          $ref: '#/components/schemas/StudyMode'
+
+    School:
+      type: object
+      required: [id, name, country, kind]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2.
+        kind:
+          type: string
+          enum: [university, polytechnic, college_of_education, other]
+    Department:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    Profile:
+      type: object
+      required: [school, department, level, examDate, onboardingComplete]
+      properties:
+        school:
+          oneOf:
+            - $ref: '#/components/schemas/School'
+            - type: 'null'
+        department:
+          oneOf:
+            - $ref: '#/components/schemas/Department'
+            - type: 'null'
+        level:
+          type: [integer, 'null']
+          minimum: 100
+          maximum: 700
+        examDate:
+          type: [string, 'null']
+          format: date
+        onboardingComplete:
+          type: boolean
+    ProfileUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        schoolId:
+          type: string
+        departmentId:
+          type: string
+        level:
+          type: integer
+          minimum: 100
+          maximum: 700
+        examDate:
+          type: [string, 'null']
+          format: date
+    Course:
+      type: object
+      required: [id, code, title, schoolId]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+          description: Normalised, for example BIO102.
+        title:
+          type: [string, 'null']
+        schoolId:
+          type: string
+    Enrolment:
+      type: object
+      required: [course, fileCount, mastery]
+      properties:
+        course:
+          $ref: '#/components/schemas/Course'
+        fileCount:
+          type: integer
+          minimum: 0
+        mastery:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+    CourseDetail:
+      type: object
+      required: [course, files, topics, examDate]
+      properties:
+        course:
+          $ref: '#/components/schemas/Course'
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoredFile'
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopicMastery'
+        examDate:
+          type: [string, 'null']
+          format: date
+
+    GuestSession:
+      type: object
+      required: [guestToken, expiresAt, questionsLeft]
+      properties:
+        guestToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        questionsLeft:
+          type: integer
+          minimum: 0
+          maximum: 3
+
+    BotEvent:
+      type: object
+      required: [eventId, provider, providerUserId, type, occurredAt]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [telegram, whatsapp]
+        providerUserId:
+          type: string
+        type:
+          type: string
+          enum: [ask_question]
+        occurredAt:
+          type: string
+          format: date-time
+    BotEventResult:
+      type: object
+      required: [accepted, streak]
+      properties:
+        accepted:
+          type: boolean
+          description: False when this `eventId` was already recorded.
+        streak:
+          $ref: '#/components/schemas/StreakSummary'
+        streakReward:
+          type: object
+          description: Present when this event earned the 7 day reward.
+          required: [tokens]
+          properties:
+            tokens:
+              type: integer
+              examples: [10]
