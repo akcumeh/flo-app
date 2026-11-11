@@ -1,10 +1,15 @@
 openapi: 3.1.0
 info:
   title: Florence API
-  version: 0.2.0-draft
+  version: 0.3.0
   summary: Backend for the Florence PWA, shared with the Telegram and WhatsApp bots.
   description: |
-    Contract for the Florence chat client (exam prep first). Draft for review: nothing here is built yet.
+    Contract for the Florence chat client (exam prep first). Frozen for the build at 0.3.0. Changes
+    land here first, then in code.
+
+    Leaderboard and Wrapped are skeletons in this version. Their routes answer with valid shapes
+    and build no ranking or recap: the board stays `not_open`, weekly results are an empty list,
+    and Wrapped answers 409 `wrapped_not_ready`.
 
     Conventions
     - Errors are RFC 9457 `application/problem+json` with a stable `code`.
@@ -44,7 +49,7 @@ tags:
   - name: Progress
     description: Overview and mastery per course.
   - name: Streak
-    description: Study days, streak, freezes and win back. Server side, Africa/Lagos time.
+    description: Study days, streak and the freeze. Server side, Africa/Lagos time.
   - name: Leaderboard
     description: Opt-in weekly boards per course and per campus.
   - name: Wrapped
@@ -541,7 +546,9 @@ paths:
       description: |
         The domain must belong to a known institution. Unknown domains answer 422
         `unknown_institution` and are queued for manual review. Addresses are canonicalised
-        (lowercase, `+tag` stripped) and each canonical address earns the bonus once.
+        (lowercase, `+tag` stripped). The first successful verification of a canonical address
+        grants a one-time `student_bonus` of 10 tokens. A yearly renewal keeps the verified badge
+        and grants nothing.
       requestBody:
         required: true
         content:
@@ -593,7 +600,7 @@ paths:
               code: '482913'
       responses:
         '200':
-          description: Verified. The student bonus, if any, is in the ledger.
+          description: Verified. On a first verification the 10 token student bonus is in the ledger.
           content:
             application/json:
               schema:
@@ -1113,13 +1120,16 @@ paths:
       summary: Start a study session from library material
       description: |
         Answers 202 with `status: generating`. Poll the session until it is `active`. One open
-        session per account: starting another closes the first. Nothing is charged here. The price
-        is worked out when the session completes, and `estimatedCost` shows the likely figure.
+        session per account: starting another closes the first.
 
-        `422 mode_not_possible` when the material cannot support the mode (screen M14), for
-        example flashcards from a file with no readable text.
+        A session costs 1 token whatever its length, charged here, at start, with the ledger key
+        `session:<id>`. A balance of 0 answers 402. The token is refunded once, through the
+        ledger, if generation fails or the student leaves with zero answers.
 
-        Open decision: charging at completion lets a student abandon unpaid.
+        A session needs at least 2 items. `409 not_enough_material` when the material cannot
+        yield 2, and nothing is charged. If generation later produces fewer than 2, the session
+        ends as `failed` and the token is refunded. `422 mode_not_possible` when the material cannot support
+        the mode (screen M14), for example flashcards from a file with no readable text.
       requestBody:
         required: true
         content:
@@ -1133,14 +1143,18 @@ paths:
               questionCount: 10
       responses:
         '202':
-          description: Accepted.
+          description: Accepted. 1 token charged.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Session'
         '401':
           $ref: '#/components/responses/Problem'
+        '402':
+          $ref: '#/components/responses/InsufficientTokens'
         '404':
+          $ref: '#/components/responses/Problem'
+        '409':
           $ref: '#/components/responses/Problem'
         '422':
           $ref: '#/components/responses/Problem'
@@ -1178,7 +1192,7 @@ paths:
       summary: Leave a session early
       description: |
         Releases any files held for the session. Answers already given stay counted for the study
-        day. Unanswered items cost nothing.
+        day. Leaving with zero answers refunds the session's 1 token, once.
       parameters:
         - $ref: '#/components/parameters/SessionId'
       responses:
@@ -1198,7 +1212,7 @@ paths:
       summary: Switch study mode mid-session
       description: |
         Keeps the same material and the answers already given. Remaining items are rebuilt in the
-        new mode. Screen M03. `422 mode_not_possible` as on create.
+        new mode. Switching charges nothing. Screen M03. `422 mode_not_possible` as on create.
       parameters:
         - $ref: '#/components/parameters/SessionId'
       requestBody:
@@ -1284,9 +1298,9 @@ paths:
       operationId: completeSession
       summary: Finish the session
       description: |
-        Charges once, counts the session toward the study day, and returns the streak effect. A
-        second call returns the same result and charges nothing. Answers 402 if the balance cannot
-        cover the price, and the session stays open.
+        Charges nothing: the session's 1 token was charged at start. A session of at least 2
+        items with every item answered makes today a study day. The result carries the streak
+        effect. A second call returns the same result.
 
         When the session lifts the streak to a multiple of 7, `streakReward` carries the +10 tokens
         already written to the ledger.
@@ -1301,8 +1315,6 @@ paths:
                 $ref: '#/components/schemas/SessionResult'
         '401':
           $ref: '#/components/responses/Problem'
-        '402':
-          $ref: '#/components/responses/InsufficientTokens'
         '404':
           $ref: '#/components/responses/Problem'
         default:
@@ -1349,7 +1361,10 @@ paths:
       tags: [Study]
       operationId: retryWrongItems
       summary: Start a new session from the items missed here
-      description: Retry wrong questions, screen C27. Same mode unless the student picks another.
+      description: |
+        Retry wrong questions, screen C27. Same mode unless the student picks another. The retry is
+        a new session and costs 1 token at start, refunded on the same rules as `createSession`.
+        `409 not_enough_material` when fewer than 2 items were missed.
       parameters:
         - $ref: '#/components/parameters/SessionId'
       requestBody:
@@ -1363,14 +1378,18 @@ paths:
                   $ref: '#/components/schemas/StudyMode'
       responses:
         '202':
-          description: The new session.
+          description: The new session. 1 token charged.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Session'
         '401':
           $ref: '#/components/responses/Problem'
+        '402':
+          $ref: '#/components/responses/InsufficientTokens'
         '404':
+          $ref: '#/components/responses/Problem'
+        '409':
           $ref: '#/components/responses/Problem'
         '422':
           $ref: '#/components/responses/Problem'
@@ -1729,18 +1748,23 @@ paths:
       operationId: getStreak
       summary: Streak, today's progress and the month calendar
       description: |
-        All maths is server side, in Africa/Lagos, on server time.
+        All maths is server side, in Africa/Lagos (00:00 to 23:59), on server time. Client clocks
+        are ignored.
 
-        - A study day is one finished session in any mode, or 10 questions or cards answered in
-          total that day (Ask questions from the bots count too).
-        - The streak gains 1 on the first study day of each calendar day.
-        - Every student gets 1 freeze each Monday 00:00. It does not stack. A missed day uses it
-          automatically at midnight and shows as `frozen`.
-        - With no freeze the streak pauses. Two finished sessions within 48 hours restore it, and
-          the missed day stays unfilled. After 48 hours the current streak becomes 0. The longest
-          streak never decreases.
+        - A study day needs either 3 items that day or one finished session. Items are prep
+          questions answered, flashcards rated and Ask questions asked, in the app or in the bots.
+          A finished session has at least 2 items, every one answered.
+        - Offline answers count for the day they were answered if they sync within 48 hours.
+        - The streak counts consecutive study days.
+        - The 6th study day of a run grants one freeze if none is held, and the run counter
+          restarts at 0. At most 1 freeze is held.
+        - A missed day uses a held freeze automatically at midnight. The streak keeps its value and
+          the day shows as `frozen`.
+        - A missed day with no freeze, or a second missed day in a row, sets the streak to 0. The
+          longest streak never decreases.
         - The pill shows `at_risk` from 18:00 if today is not yet a study day.
-        - Every 7th streak day writes a `streak_reward` of 10 tokens to the ledger, once per day.
+        - Each time the streak reaches a multiple of 7, a `streak_reward` of 10 tokens is written
+          to the ledger with the key `streak7:<account>:<study_day>`.
       parameters:
         - name: month
           in: query
@@ -1773,6 +1797,9 @@ paths:
 
         A board opens at 5 opted-in students (`status: not_open`, screen L07). Students who are
         opted out get their private rank in `you` and are never listed in `entries`.
+
+        Skeleton in 0.3.0: every board answers `status: not_open` with empty `entries` and a null
+        `you.rank`. No ranking is computed yet.
       parameters:
         - name: scope
           in: query
@@ -1806,8 +1833,9 @@ paths:
       operationId: setLeaderboardOptIn
       summary: Join or leave the leaderboards
       description: |
-        Default is off. The shown name is a display name of 2 to 20 characters, filtered. A name
-        that fails the filter answers 422 `display_name_rejected`.
+        Default is off. The shown name is a display name of 2 to 20 characters, checked against a
+        blocklist. A name that matches the blocklist answers 422 `display_name_rejected` and is not
+        stored. The flag and name are stored in 0.3.0 even though boards are not built yet.
       requestBody:
         required: true
         content:
@@ -1849,18 +1877,26 @@ paths:
     get:
       tags: [Leaderboard]
       operationId: getWeeklyResults
-      summary: Last week's result
-      description: Screen L06, shown on Monday.
+      summary: Last week's results
+      description: |
+        Screen L06, shown on Monday. One entry per board the student was on for the week that just
+        ended. Skeleton in 0.3.0: always an empty list.
       responses:
         '200':
-          description: Result for the week that just ended.
+          description: Results for the week that just ended.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeeklyResult'
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WeeklyResult'
+              example:
+                items: []
         '401':
-          $ref: '#/components/responses/Problem'
-        '404':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -1872,10 +1908,12 @@ paths:
       operationId: getWrapped
       summary: Florence Wrapped for a month or a year
       description: |
-        Monthly recaps are generated on the 1st for the previous month, yearly on 31 Dec. Needs 5
-        study days in the period, otherwise `status: not_ready` (screen W11). A topic is only named
-        strongest or weakest with at least 10 answers behind it. Ask questions asked through the
-        bots count.
+        Monthly recaps are generated on the 1st for the previous month, yearly on 31 Dec. A period
+        needs 5 study days. A topic is only named strongest or weakest with at least 10 answers
+        behind it. Ask questions asked through the bots count.
+
+        When a recap is not ready the call answers 409 `wrapped_not_ready` (screen W11). Skeleton
+        in 0.3.0: no recap is built, so every period answers 409.
       parameters:
         - name: period
           in: query
@@ -1886,13 +1924,26 @@ paths:
             pattern: '^[0-9]{4}(-(0[1-9]|1[0-2]))?$'
       responses:
         '200':
-          description: The recap, or why it is not ready.
+          description: The recap.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Wrapped'
         '401':
           $ref: '#/components/responses/Problem'
+        '409':
+          description: Not ready. Fewer than 5 study days in the period, or recaps are not built yet.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: https://florence.example/problems/wrapped-not-ready
+                title: Wrapped is not ready
+                status: 409
+                code: wrapped_not_ready
+                detail: Wrapped for 2026-10 is not ready yet.
+                requestId: req_01JC8Q40
         default:
           $ref: '#/components/responses/Problem'
 
@@ -1904,7 +1955,8 @@ paths:
       description: |
         For WhatsApp status and Instagram stories. Brand colours are fixed in light and dark so a
         shared image always looks the same. The score stays hidden unless `showScore=true`
-        (screen W09).
+        (screen W09). Answers 409 `wrapped_not_ready` on the same rule as `getWrapped`, which in
+        0.3.0 means always.
       parameters:
         - name: period
           in: query
@@ -1937,6 +1989,8 @@ paths:
         '401':
           $ref: '#/components/responses/Problem'
         '404':
+          $ref: '#/components/responses/Problem'
+        '409':
           $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
@@ -2292,7 +2346,9 @@ paths:
       tags: [Account]
       operationId: getReferral
       summary: The student's invite code and link
-      description: Screen F09. The reward size is not decided, so `rewardTokens` can be null.
+      description: |
+        Screen F09. When an invited student finishes their first session, the inviter and the
+        invitee each get a `referral_reward` of 5 tokens, once per invitee.
       responses:
         '200':
           description: Referral state.
@@ -2311,7 +2367,8 @@ paths:
                     type: integer
                     minimum: 0
                   rewardTokens:
-                    type: [integer, 'null']
+                    type: integer
+                    const: 5
         '401':
           $ref: '#/components/responses/Problem'
         default:
@@ -2438,10 +2495,11 @@ paths:
     post:
       tags: [Internal]
       operationId: recordBotEvent
-      summary: A bot reports a question the student asked
+      summary: A bot reports a question asked or answered
       description: |
-        Every question asked through the Telegram or WhatsApp bot is reported here, so bot activity
-        counts toward study days, the streak and Florence Wrapped. The identity is resolved to an
+        Every Ask question, every prep answer and every finished prep quiz in the Telegram or
+        WhatsApp bot is reported here, so bot activity counts toward study days, the streak and
+        Florence Wrapped on the same rules as the app. The identity is resolved to an
         account the same way as sign-in, including importing the legacy balance, so a student who
         has never opened the app still has a streak.
 
@@ -2777,7 +2835,8 @@ components:
             `challenge_expired`, `challenge_pending`, `challenge_already_redeemed`,
             `identity_belongs_to_other_account`, `last_identity`, `library_full`,
             `unknown_institution`, `channel_not_linked`, `refresh_reuse_detected`, `not_found`,
-            `mode_not_possible`, `answer_too_old`, `display_name_rejected`, `guest_limit_reached`.
+            `mode_not_possible`, `not_enough_material`, `answer_too_old`, `display_name_rejected`,
+            `guest_limit_reached`, `wrapped_not_ready`.
         detail:
           type: string
         requestId:
@@ -2944,12 +3003,13 @@ components:
         dailyReminder:
           type: boolean
           description: |
-            At most one push a day, only if today is not yet a study day. The copy never mentions
-            loss ("Keep it going", not "You'll lose").
+            At most one push a day, only if today is not yet a study day. The copy is in English
+            and never mentions loss ("Keep it going", not "You'll lose").
         reminderLocalTime:
           type: string
-          description: Default 20:00. Never after 22:00.
-          pattern: '^(([01][0-9]|2[01]):[0-5][0-9]|22:00)$'
+          description: Africa/Lagos time. Default 20:00. Selectable from 06:00 to 22:00.
+          default: '20:00'
+          pattern: '^((0[6-9]|1[0-9]|2[01]):[0-5][0-9]|22:00)$'
         streakNudges:
           type: boolean
         leaderboardUpdates:
@@ -2976,6 +3036,7 @@ components:
             - prep_charge
             - create_charge
             - refund
+            - referral_reward
             - merge_in
             - merge_out
             - legacy_import
@@ -3148,7 +3209,7 @@ components:
             type: string
         questionCount:
           type: integer
-          minimum: 3
+          minimum: 2
           maximum: 30
           default: 10
         timeLimitMinutes:
@@ -3197,7 +3258,7 @@ components:
           $ref: '#/components/schemas/ItemState'
     Session:
       type: object
-      required: [id, mode, status, requestedCount, generatedCount, currentIndex, items, estimatedCost, switchableModes, expiresAt]
+      required: [id, mode, status, requestedCount, generatedCount, currentIndex, items, cost, refunded, switchableModes, expiresAt]
       properties:
         id:
           type: string
@@ -3206,7 +3267,8 @@ components:
           $ref: '#/components/schemas/StudyMode'
         status:
           type: string
-          enum: [generating, active, completed, expired]
+          description: '`failed` when generation failed or yielded fewer than 2 items. The token is refunded.'
+          enum: [generating, active, completed, failed, expired]
         fileIds:
           type: array
           items:
@@ -3232,9 +3294,13 @@ components:
           description: Modes this material supports, for the switch sheet (M03).
           items:
             $ref: '#/components/schemas/StudyMode'
-        estimatedCost:
+        cost:
           type: integer
-          minimum: 1
+          const: 1
+          description: Tokens charged when the session started, whatever its length.
+        refunded:
+          type: boolean
+          description: True once the start charge has been refunded. Happens at most once.
         timeLimitSeconds:
           type: integer
           description: Mock exam only.
@@ -3341,6 +3407,8 @@ components:
         charged:
           type: integer
           minimum: 0
+          maximum: 1
+          description: Tokens this session cost in the end, after any refund. Completion itself charges nothing.
         balance:
           type: integer
           minimum: 0
@@ -3456,7 +3524,7 @@ components:
           description: Never decreases.
         state:
           type: string
-          enum: [none, active, at_risk, paused]
+          enum: [none, active, at_risk]
         studiedToday:
           type: boolean
     Streak:
@@ -3467,41 +3535,31 @@ components:
           properties:
             todayProgress:
               type: object
-              required: [answered, target, sessionsFinished]
+              required: [items, target, sessionsFinished]
               properties:
-                answered:
+                items:
                   type: integer
                   minimum: 0
+                  description: Prep questions answered, flashcards rated and Ask questions asked today, app and bots together.
                 target:
                   type: integer
-                  const: 10
+                  const: 3
                 sessionsFinished:
                   type: integer
                   minimum: 0
+                  description: Sessions of at least 2 items, every one answered. One is enough for the day.
             freeze:
               type: object
-              required: [available, nextAt]
+              required: [held, daysToEarn]
               properties:
-                available:
+                held:
                   type: boolean
-                nextAt:
-                  type: string
-                  format: date-time
-                  description: Next Monday 00:00 in Africa/Lagos.
-            winBack:
-              type: [object, 'null']
-              description: Present while the streak is paused.
-              required: [sessionsDone, sessionsNeeded, expiresAt]
-              properties:
-                sessionsDone:
-                  type: integer
-                  minimum: 0
-                sessionsNeeded:
-                  type: integer
-                  const: 2
-                expiresAt:
-                  type: string
-                  format: date-time
+                  description: At most one freeze is held.
+                daysToEarn:
+                  type: [integer, 'null']
+                  minimum: 1
+                  maximum: 6
+                  description: Study days left in the current run until a freeze is earned. Null while one is held.
             timezone:
               type: string
               const: Africa/Lagos
@@ -3553,6 +3611,7 @@ components:
               minimum: 0
         wrappedTeaser:
           type: [object, 'null']
+          description: In 0.3.0 `ready` is always false.
           required: [period, ready]
           properties:
             period:
@@ -3747,7 +3806,8 @@ components:
           type: string
         status:
           type: string
-          enum: [ready, not_ready]
+          const: ready
+          description: A period that is not ready answers 409 `wrapped_not_ready` instead.
         studyDaysInPeriod:
           type: integer
           minimum: 0
@@ -3938,10 +3998,29 @@ components:
           type: string
         type:
           type: string
-          enum: [ask_question]
+          description: |
+            `ask_question` and `prep_answer` each count as one item toward the 3-item study day.
+            `prep_session_finished` counts as a finished session when `questionCount` is at least
+            2 and `answeredCount` equals it.
+          enum: [ask_question, prep_answer, prep_session_finished]
+        questionCount:
+          type: integer
+          minimum: 1
+          description: Required for `prep_session_finished`.
+        answeredCount:
+          type: integer
+          minimum: 0
+          description: Required for `prep_session_finished`.
         occurredAt:
           type: string
           format: date-time
+          description: Counts for the Lagos day it happened if it arrives within 48 hours.
+      if:
+        properties:
+          type:
+            const: prep_session_finished
+      then:
+        required: [questionCount, answeredCount]
     BotEventResult:
       type: object
       required: [accepted, streak]
