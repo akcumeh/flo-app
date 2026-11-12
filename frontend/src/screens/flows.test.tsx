@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from '../App';
@@ -189,6 +189,85 @@ describe('Sign-in', () => {
         expect(
             await screen.findByRole('heading', { name: 'Please log in again' })
         ).toBeInTheDocument();
+    });
+});
+
+describe('Onboarding and profile', () => {
+    it('sends a new account through school, department and level, then home', async () => {
+        const fake = installFakeBackend();
+        let profile: Record<string, unknown> = {
+            school: null,
+            department: null,
+            level: null,
+            examDate: null,
+            onboardingComplete: false,
+        };
+        fake.on('GET', '/v1/me', () => json({ ...ACCOUNT, profile }));
+        fake.on('GET', '/v1/schools', () =>
+            json({
+                items: [
+                    {
+                        id: 'unilag',
+                        name: 'University of Lagos (UNILAG)',
+                        country: 'NG',
+                        kind: 'university',
+                    },
+                    {
+                        id: 'ui',
+                        name: 'University of Ibadan (UI)',
+                        country: 'NG',
+                        kind: 'university',
+                    },
+                ],
+            })
+        );
+        fake.on('GET', '/v1/schools/unilag/departments', () =>
+            json({ items: [{ id: 'mcb', name: 'Microbiology' }] })
+        );
+        fake.on('PUT', '/v1/me/profile', async (req) => {
+            const body = (await req.json()) as Record<string, unknown>;
+            if (body.schoolId)
+                profile = {
+                    ...profile,
+                    school: {
+                        id: 'unilag',
+                        name: 'University of Lagos (UNILAG)',
+                        country: 'NG',
+                        kind: 'university',
+                    },
+                };
+            if (body.departmentId)
+                profile = { ...profile, department: { id: 'mcb', name: 'Microbiology' } };
+            if (body.level) profile = { ...profile, level: body.level, onboardingComplete: true };
+            return json(profile);
+        });
+        const user = userEvent.setup();
+        renderAt('/home');
+
+        await screen.findByRole('heading', { name: 'Where do you study?' });
+        await user.click(await screen.findByRole('radio', { name: /University of Lagos/ }));
+        await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+        await screen.findByRole('heading', { name: 'What are you studying?' });
+        await user.type(screen.getByLabelText('Department'), 'Microbiology');
+        await user.click(screen.getByRole('radio', { name: /200L/ }));
+        await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+        await screen.findByRole('heading', { name: "Pick this semester's courses" });
+        const puts = fake.calls.filter((c) => c.path === '/v1/me/profile').map((c) => c.body);
+        expect(puts).toEqual([{ schoolId: 'unilag' }, { departmentId: 'mcb', level: 200 }]);
+    });
+
+    it('logs out from Profile and lands on sign-in', async () => {
+        const fake = installFakeBackend();
+        const user = userEvent.setup();
+        renderAt('/profile');
+        await user.click(await screen.findByRole('button', { name: 'Log out' }));
+        const dialog = await screen.findByRole('dialog', { name: 'Log out?' });
+        fake.signedIn = false;
+        await user.click(within(dialog).getByRole('button', { name: 'Log out' }));
+        await screen.findByRole('heading', { name: 'Save your progress' });
+        expect(fake.calls.some((c) => c.path === '/v1/auth/logout')).toBe(true);
     });
 });
 

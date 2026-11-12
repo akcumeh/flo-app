@@ -1,0 +1,104 @@
+@use '../styles/type';
+
+.page {
+    max-width: 640px;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
+    background: var(--web-bg);
+}
+
+.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(8px + env(safe-area-inset-top)) 8px 8px;
+}
+
+.back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: var(--web-text);
+}
+
+.barTitle {
+    @include type.body-strong;
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 16px;
+}
+
+.who {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 4px 0 8px;
+}
+
+.name {
+    @include type.title;
+}
+
+.meta {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.group {
+    overflow: hidden;
+    border: 1.5px solid var(--web-line);
+    border-radius: var(--app-radius-card);
+    background: var(--web-surface);
+}
+
+.row {
+    @include type.body;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 16px;
+    text-align: left;
+    color: var(--web-text);
+
+    &:disabled {
+        cursor: default;
+        opacity: 1;
+    }
+}
+
+.row + .row {
+    border-top: 1px solid var(--web-line);
+}
+
+.rowIcon {
+    color: var(--web-text-2);
+}
+
+.rowLabel {
+    flex: 1;
+}
+
+.rowValue {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.chevron {
+    color: var(--web-text-2);
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+}

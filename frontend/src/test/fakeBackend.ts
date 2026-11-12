@@ -8,6 +8,13 @@ export const ACCOUNT = {
     identities: [],
     student: { status: 'none' },
     createdAt: '2026-11-10T20:00:00Z',
+    profile: {
+        school: { id: 'unilag', name: 'University of Lagos', country: 'NG', kind: 'university' },
+        department: { id: 'mcb', name: 'Microbiology' },
+        level: 200,
+        examDate: null,
+        onboardingComplete: true,
+    },
 };
 
 export const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -86,6 +93,11 @@ export function installFakeBackend(opts: { signedIn?: boolean } = {}): FakeBacke
         })
     );
     fake.on('GET', '/v1/tokens', () => json({ balance: fake.balance }));
+    fake.on('GET', '/v1/me/courses', () => json({ items: [] }));
+    fake.on('GET', '/v1/conversations', () => json({ items: [], nextCursor: null }));
+    fake.on('GET', '/v1/facts/today', () =>
+        json({ id: 'f1', date: '2026-11-12', text: 'Octopuses have three hearts.' })
+    );
     fake.on('GET', '/v1/home', () =>
         json({
             variant: 'today',

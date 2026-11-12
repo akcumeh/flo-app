@@ -1,13 +1,14 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
-import { Icon } from './components/Icon';
 import { useAccount } from './state/AccountContext';
 import { AppearanceScreen } from './screens/AppearanceScreen';
 import { AskScreen } from './screens/AskScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
+import { OnboardingScreen } from './screens/OnboardingScreen';
 import { PrepHomeScreen } from './screens/PrepHomeScreen';
 import { PrepSessionScreen } from './screens/PrepSessionScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
 import { ProgressScreen } from './screens/ProgressScreen';
 import { SessionExpiredScreen } from './screens/SessionExpiredScreen';
 import { SignInScreen } from './screens/SignInScreen';
@@ -15,21 +16,33 @@ import { TelegramWaitScreen } from './screens/TelegramWaitScreen';
 import { VerifyScreen } from './screens/VerifyScreen';
 import s from './screens/Auth.module.scss';
 
-function Splash() {
+export function Splash() {
     return (
         <div className={s.splash} aria-busy="true" aria-label="Loading Florence">
-            <Icon name="asterisk-action" />
+            <svg width="88" height="84" viewBox="0 0 14 13.3731" aria-hidden="true">
+                <path
+                    d="M13.8657 5.99929L9.74887 7.49913L12.7026 10.8814L9.97843 13.2383L6.93286 9.77948L3.8873 13.2383L1.16313 10.8814L4.14747 7.52974L0 5.99929L1.25496 2.50991L5.11165 3.99443V0H8.75408V3.99443L12.6108 2.50991L13.8657 5.99929Z"
+                    fill="#ffffff"
+                />
+            </svg>
         </div>
     );
 }
 
 function RequireAccount() {
-    const { status } = useAccount();
+    const { status, account } = useAccount();
     const location = useLocation();
     const from = `${location.pathname}${location.search}`;
     if (status === 'loading') return <Splash />;
     if (status === 'expired') return <SessionExpiredScreen from={from} />;
     if (status === 'signedOut') return <Navigate to="/signin" replace state={{ from }} />;
+    const onboarding =
+        location.pathname === '/onboarding' ||
+        location.pathname === '/profile' ||
+        location.pathname.startsWith('/settings');
+    if (account && !account.profile?.onboardingComplete && !onboarding) {
+        return <Navigate to="/onboarding" replace />;
+    }
     return <Outlet />;
 }
 
@@ -53,6 +66,8 @@ export function App() {
                 <Route path="/signin/telegram" element={<TelegramWaitScreen />} />
             </Route>
             <Route element={<RequireAccount />}>
+                <Route path="/onboarding" element={<OnboardingScreen />} />
+                <Route path="/profile" element={<ProfileScreen />} />
                 <Route path="/settings/appearance" element={<AppearanceScreen />} />
                 <Route element={<AppShell />}>
                     <Route path="/home" element={<HomeScreen />} />
