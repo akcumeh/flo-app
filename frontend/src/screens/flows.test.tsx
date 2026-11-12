@@ -84,6 +84,59 @@ describe('Sign-in', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent("That code didn't work");
     });
 
+    it('signs in through Telegram: opens the bot, waits for Start, then redeems', async () => {
+        const fake = installFakeBackend({ signedIn: false });
+        vi.stubGlobal(
+            'open',
+            vi.fn(() => null)
+        );
+        let polls = 0;
+        fake.on('POST', '/v1/auth/challenges', () =>
+            json(
+                {
+                    challengeId: 'chal-secret-1234567890',
+                    code: 'FLO-482913',
+                    deepLink: 'https://t.me/FlorenceAIBot?start=login_FLO-482913',
+                    expiresAt: '2026-11-12T21:10:00Z',
+                },
+                201
+            )
+        );
+        fake.on('GET', '/v1/auth/challenges/chal-secret-1234567890', () => {
+            polls += 1;
+            return json({
+                status: polls > 1 ? 'verified' : 'pending',
+                expiresAt: '2026-11-12T21:10:00Z',
+            });
+        });
+        fake.on('POST', '/v1/auth/challenges/chal-secret-1234567890/redeem', () =>
+            json({
+                accessToken: 'tok-tg',
+                expiresIn: 900,
+                account: ACCOUNT,
+                isNewAccount: false,
+                welcomeGrant: { granted: false, tokens: 0 },
+            })
+        );
+        const user = userEvent.setup();
+        renderAt('/signin');
+
+        await user.click(await screen.findByRole('button', { name: 'Continue with Telegram' }));
+        await screen.findByRole('heading', { name: 'Tap Start in Telegram' });
+        expect(screen.getByRole('link', { name: 'Open Telegram' })).toHaveAttribute(
+            'href',
+            'https://t.me/FlorenceAIBot?start=login_FLO-482913'
+        );
+        expect(fake.calls.find((c) => c.path === '/v1/auth/challenges')?.body).toEqual({
+            channel: 'telegram',
+            intent: 'signin',
+        });
+
+        await screen.findByRole('heading', { name: /Ada/ }, { timeout: 8000 });
+        expect(polls).toBe(2);
+        expect(fake.calls.find((c) => c.path === '/v1/streak')?.auth).toBe('Bearer tok-tg');
+    }, 15000);
+
     it('shows the server message when WhatsApp cannot reach the number', async () => {
         const fake = installFakeBackend({ signedIn: false });
         fake.on('POST', '/v1/auth/whatsapp/start', () =>

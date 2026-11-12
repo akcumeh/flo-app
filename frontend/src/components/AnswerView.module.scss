@@ -30,82 +30,49 @@
     color: var(--color-asterisk);
 }
 
-.headline {
-    font-weight: 800;
-    font-size: 25px;
-    line-height: 1.15;
-    letter-spacing: -0.375px;
-}
-
-.steps {
+.markdown {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.step {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    min-width: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
 
     p {
-        flex: 1;
-        min-width: 0;
-        font-size: 16px;
-        line-height: 1.55;
+        margin: 0;
     }
-}
 
-.num {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 28px;
-    height: 28px;
-    border-radius: 14px;
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-    font-weight: 800;
-    font-size: 13px;
+    strong {
+        font-weight: 700;
+    }
+
+    code {
+        padding: 1px 6px;
+        border-radius: 6px;
+        background: var(--web-surface-2);
+        font-family: var(--font-label);
+        font-size: 14px;
+    }
+
+    pre {
+        margin: 0;
+        padding: 14px;
+        overflow-x: auto;
+        border-radius: 16px;
+        background: var(--web-surface-2);
+
+        code {
+            padding: 0;
+            background: none;
+        }
+    }
 }
 
 .page {
     font-weight: 700;
-    font-size: 16px;
-    line-height: 1.55;
-    color: var(--color-prep-text);
+    color: var(--web-brand-text);
     text-decoration: underline;
-}
-
-.paragraph {
-    font-size: 16px;
-    line-height: 1.55;
-}
-
-.callout {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 18px;
-    border-radius: 24px;
-    background: var(--color-field-prep);
-}
-
-.calloutLabel {
-    font-weight: 800;
-    font-size: 11px;
-    letter-spacing: 1.1px;
-    color: var(--color-prep-text);
-}
-
-.calloutText {
-    font-weight: 700;
-    font-size: 18px;
-    line-height: 1.35;
 }
 
 .source {

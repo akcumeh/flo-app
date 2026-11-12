@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { ChatText } from './ChatText';
 import { Icon } from './Icon';
-import { pagesLabel, parseAnswer } from '../lib/answer';
+import { pagesLabel, plainText } from '../lib/answer';
 import type { Citation } from '../api';
 import s from './AnswerView.module.scss';
 
@@ -21,7 +22,6 @@ export function AnswerView({
 }: AnswerViewProps) {
     const [vote, setVote] = useState<'up' | 'down' | null>(null);
     const [copied, setCopied] = useState(false);
-    const blocks = parseAnswer(text);
 
     const byFile = new Map<string, { label: string; pages: number[] }>();
     for (const c of citations) {
@@ -33,9 +33,7 @@ export function AnswerView({
 
     const copy = async () => {
         try {
-            await navigator.clipboard.writeText(
-                text.replace(/\[p\.\d+\]/g, '').replace(/^#\s*/gm, '')
-            );
+            await navigator.clipboard.writeText(plainText(text));
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
         } catch {
@@ -54,47 +52,9 @@ export function AnswerView({
                 </p>
             </div>
 
-            {blocks.map((block, i) => {
-                if (block.kind === 'headline') {
-                    return (
-                        <h2 key={i} className={s.headline}>
-                            {block.text}
-                        </h2>
-                    );
-                }
-                if (block.kind === 'steps') {
-                    return (
-                        <ol key={i} className={s.steps}>
-                            {block.steps.map((step, n) => (
-                                <li key={n} className={s.step}>
-                                    <span className={s.num}>{n + 1}</span>
-                                    <p>
-                                        {step.text}{' '}
-                                        {step.pages.map((p) => (
-                                            <button key={p} type="button" className={s.page}>
-                                                p.{p}
-                                            </button>
-                                        ))}
-                                    </p>
-                                </li>
-                            ))}
-                        </ol>
-                    );
-                }
-                if (block.kind === 'callout') {
-                    return (
-                        <div key={i} className={s.callout}>
-                            <p className={s.calloutLabel}>{block.label.toUpperCase()}</p>
-                            <p className={s.calloutText}>{block.text}</p>
-                        </div>
-                    );
-                }
-                return (
-                    <p key={i} className={s.paragraph}>
-                        {block.text}
-                    </p>
-                );
-            })}
+            <div className={s.markdown}>
+                <ChatText text={text} />
+            </div>
 
             {!streaming &&
                 [...byFile.values()].map((file) => (

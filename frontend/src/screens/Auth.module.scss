@@ -69,6 +69,19 @@
     min-height: 44px;
 }
 
+.linkButton {
+    @include type.button;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 56px;
+    border-radius: var(--app-radius-pill);
+    background: var(--web-brand);
+    color: var(--web-on-brand);
+    text-decoration: none;
+}
+
 .terms {
     @include type.caption;
     margin-top: auto;

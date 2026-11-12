@@ -11,6 +11,7 @@ import { PrepSessionScreen } from './screens/PrepSessionScreen';
 import { ProgressScreen } from './screens/ProgressScreen';
 import { SessionExpiredScreen } from './screens/SessionExpiredScreen';
 import { SignInScreen } from './screens/SignInScreen';
+import { TelegramWaitScreen } from './screens/TelegramWaitScreen';
 import { VerifyScreen } from './screens/VerifyScreen';
 import s from './screens/Auth.module.scss';
 
@@ -49,6 +50,7 @@ export function App() {
             <Route element={<GuestOnly />}>
                 <Route path="/signin" element={<SignInScreen />} />
                 <Route path="/signin/code" element={<VerifyScreen />} />
+                <Route path="/signin/telegram" element={<TelegramWaitScreen />} />
             </Route>
             <Route element={<RequireAccount />}>
                 <Route path="/settings/appearance" element={<AppearanceScreen />} />

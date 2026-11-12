@@ -63,11 +63,35 @@ function GoogleButton({ from, onError }: { from: string; onError: (message: stri
     }, [from, navigate, onError, signedIn]);
 
     if (!GOOGLE_CLIENT_ID) return null;
+    return <div ref={ref} className={s.google} aria-label="Continue with Google" />;
+}
+
+function TelegramButton({ from, onError }: { from: string; onError: (message: string) => void }) {
+    const navigate = useNavigate();
+    const [busy, setBusy] = useState(false);
+
+    const start = async () => {
+        setBusy(true);
+        const tab = window.open('', '_blank');
+        try {
+            const { data } = await client.POST('/v1/auth/challenges', {
+                body: { channel: 'telegram', intent: 'signin' },
+            });
+            if (tab && data?.deepLink) tab.location.href = data.deepLink;
+            navigate('/signin/telegram', { state: { ...data, from, opened: Boolean(tab) } });
+        } catch (err) {
+            tab?.close();
+            onError(err instanceof Error ? err.message : 'Telegram sign-in is not available.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
     return (
-        <>
-            <p className={s.or}>or</p>
-            <div ref={ref} className={s.google} aria-label="Continue with Google" />
-        </>
+        <Button variant="secondary" block loading={busy} onClick={() => void start()}>
+            <Icon name="telegram" />
+            Continue with Telegram
+        </Button>
     );
 }
 
@@ -132,7 +156,9 @@ export function SignInScreen() {
                     <Button type="submit" block loading={busy}>
                         Send code
                     </Button>
+                    <p className={s.or}>or</p>
                     <GoogleButton from={from} onError={setError} />
+                    <TelegramButton from={from} onError={setError} />
                 </form>
                 <p className={s.terms}>
                     By continuing you agree to Florence's Terms and Privacy Policy.

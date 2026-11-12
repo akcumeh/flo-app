@@ -39,6 +39,7 @@ export type IconName =
     | 'nav-progress'
     | 'new-chat'
     | 'plus'
+    | 'telegram'
     | 'thumb-down'
     | 'thumb-up'
     | 'upload'
