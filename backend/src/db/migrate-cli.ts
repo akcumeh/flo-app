@@ -4,16 +4,16 @@ import { migrate } from './migrate.js';
 import { PgDb } from './pg.db.js';
 
 async function main() {
-  const db = new PgDb(loadConfig().databaseUrl);
-  try {
-    const ran = await migrate(db);
-    console.log(ran.length === 0 ? 'Nothing to apply.' : `Applied: ${ran.join(', ')}`);
-  } finally {
-    await db.close();
-  }
+    const db = new PgDb(loadConfig().databaseUrl, { max: loadConfig().dbPoolMax });
+    try {
+        const ran = await migrate(db);
+        console.log(ran.length === 0 ? 'Nothing to apply.' : `Applied: ${ran.join(', ')}`);
+    } finally {
+        await db.close();
+    }
 }
 
 main().catch((error) => {
-  console.error(error);
-  process.exit(1);
+    console.error(error);
+    process.exit(1);
 });

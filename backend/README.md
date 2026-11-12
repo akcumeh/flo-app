@@ -14,9 +14,14 @@ npm run dev
 
 ```bash
 npm test
+npm run lint
 npm run lint:spec
 npm run build
 ```
+
+`npm run lint` runs ESLint and checks Prettier formatting (4 spaces). `npm run format` rewrites files to match.
+
+With no Postgres installed, `npm run db:local` serves PGlite on port 5432 with data in `.pglite/`. Set `DB_POOL_MAX=1` while using it.
 
 Tests run on Vitest against an in-memory Postgres (PGlite), so they need no database. External services are replaced by fakes in tests: the AI provider, storage, Paystack, Web Push and the Telegram messenger.
 
@@ -26,7 +31,7 @@ All 77 operations answer. The five leaderboard and Wrapped operations are skelet
 
 | Area | Notes |
 |---|---|
-| Sign-in | Email codes, Telegram deep link and WhatsApp code challenges claimed by the bots, Telegram Login Widget and OIDC, Google ID tokens. With a bearer token each one links instead. Merge moves balances and 26 tables in one transaction |
+| Sign-in | WhatsApp number codes (approved template `florence_signin_code`), email codes, Telegram deep link and WhatsApp code challenges claimed by the bots, Telegram Login Widget and OIDC, Google ID tokens. With a bearer token each one links instead. Merge moves balances and 26 tables in one transaction |
 | Student status | School email codes with plus-tag stripping and a disposable-domain list, or Google `hd`. 10 tokens once per address and per account |
 | Library | Uploads up to 20 MB (one PDF, one voice note, or up to 30 page photos as one material), dedupe by content hash, a 20 file cap, PDF text per page, OCR for scans and photos, page-numbered chunks with `tsvector`, topics |
 | Study | 1 token per session at start, refunded once on failed generation or zero answers. Quiz, flashcards, fill in the blank and mock exam. Local marking for choice items, model marking for written ones. 48 hour offline answers |

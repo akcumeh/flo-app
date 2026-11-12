@@ -319,6 +319,110 @@ paths:
         default:
           $ref: '#/components/responses/Problem'
 
+  /v1/auth/whatsapp/start:
+    post:
+      tags: [Auth]
+      operationId: startWhatsAppAuth
+      summary: Send a 6-digit sign-in code on WhatsApp
+      description: |
+        Sends the approved authentication template `florence_signin_code` to the number on
+        WhatsApp. Nigerian local numbers (`0803 123 4567`) are read as +234. The identity is the
+        WhatsApp number, the same id the bot uses, so a student who has chatted with Florence on
+        WhatsApp signs in to that account and keeps its history.
+
+        Limits: 3 sends per hour per number, 10 per hour per IP. Answers 422 `invalid_phone` for a
+        number that cannot be a phone number, 422 `whatsapp_send_failed` when WhatsApp refuses the
+        message (for example, the number has no WhatsApp account), and 503 `channel_unavailable`
+        when the WhatsApp Cloud API settings are missing in production.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone:
+                  type: string
+                  minLength: 7
+                  maxLength: 24
+            example:
+              phone: 0803 123 4567
+      responses:
+        '202':
+          description: Sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [phone, display, resendAfter]
+                properties:
+                  phone:
+                    type: string
+                    description: Digits with country code, used for the verify call.
+                  display:
+                    type: string
+                    description: The number as typed back to the student, for "We sent it on WhatsApp to ...".
+                  resendAfter:
+                    type: integer
+                    description: Seconds before another code can be asked for.
+              example:
+                phone: '2348031234567'
+                display: 0803 123 4567
+                resendAfter: 30
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
+
+  /v1/auth/whatsapp/verify:
+    post:
+      tags: [Auth]
+      operationId: verifyWhatsAppAuth
+      summary: Confirm the WhatsApp code
+      description: Five wrong attempts lock the code. With a bearer token the number is linked instead.
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, code]
+              properties:
+                phone:
+                  type: string
+                  minLength: 7
+                  maxLength: 24
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+            example:
+              phone: '2348031234567'
+              code: '482913'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSession'
+        '400':
+          $ref: '#/components/responses/Problem'
+        '409':
+          $ref: '#/components/responses/IdentityConflict'
+        '422':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        default:
+          $ref: '#/components/responses/Problem'
+
   /v1/auth/google:
     post:
       tags: [Auth]
@@ -2868,7 +2972,7 @@ components:
             `course_required`, `request_in_progress`, `file_not_ready`, `voice_not_available`,
             `empty_message`, `invalid_guest_token`, `email_required`, `payments_unavailable`,
             `invalid_signature`, `invalid_subscription`, `invalid_referral`, `referral_too_late`,
-            `event_too_old`.
+            `event_too_old`, `invalid_phone`, `whatsapp_send_failed`, `invalid_code`, `code_locked`.
         detail:
           type: string
         requestId:

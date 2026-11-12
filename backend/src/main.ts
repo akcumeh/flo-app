@@ -8,28 +8,29 @@ import { JobsService } from './jobs/jobs.service.js';
 import { SchedulerService } from './jobs/scheduler.service.js';
 
 async function main() {
-  const config = loadConfig();
-  const db = new PgDb(config.databaseUrl, { max: config.dbPoolMax });
-  const mailer: Mailer =
-    config.mailDriver === 'resend'
-      ? new ResendMailer(config.resendApiKey as string, config.mailFrom as string)
-      : new ConsoleMailer();
-  const app = await createApp({ config, db, mailer });
-  await app.listen(config.port);
-  app.get(JobsService).start();
-  app.get(SchedulerService).start();
-  process.stdout.write(`${JSON.stringify({ time: new Date().toISOString(), level: 'info', msg: `Florence API listening on ${config.port}` })}
+    const config = loadConfig();
+    const db = new PgDb(config.databaseUrl, { max: config.dbPoolMax });
+    const mailer: Mailer =
+        config.mailDriver === 'resend'
+            ? new ResendMailer(config.resendApiKey as string, config.mailFrom as string)
+            : new ConsoleMailer();
+    const app = await createApp({ config, db, mailer });
+    await app.listen(config.port);
+    app.get(JobsService).start();
+    app.get(SchedulerService).start();
+    process.stdout
+        .write(`${JSON.stringify({ time: new Date().toISOString(), level: 'info', msg: `Florence API listening on ${config.port}` })}
 `);
-  const shutdown = async () => {
-    await app.close();
-    await db.close();
-    process.exit(0);
-  };
-  process.once('SIGTERM', () => void shutdown());
-  process.once('SIGINT', () => void shutdown());
+    const shutdown = async () => {
+        await app.close();
+        await db.close();
+        process.exit(0);
+    };
+    process.once('SIGTERM', () => void shutdown());
+    process.once('SIGINT', () => void shutdown());
 }
 
 main().catch((error) => {
-  console.error(error);
-  process.exit(1);
+    console.error(error);
+    process.exit(1);
 });
