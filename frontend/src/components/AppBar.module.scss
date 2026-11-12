@@ -1,0 +1,31 @@
+@use '../styles/type';
+
+.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: calc(56px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 4px 0;
+    background: var(--web-bg);
+}
+
+.icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--app-radius-pill);
+    color: var(--web-text);
+}
+
+.title {
+    @include type.body-strong;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -104,6 +104,15 @@ describe('files and library', () => {
         expect(h.ai.calls).toHaveLength(1);
     });
 
+    it('keeps a UTF-8 filename as the student wrote it', async () => {
+        const a = await signIn(h);
+        const res = await upload(a.body.accessToken, [
+            pdf(['Osmosis moves water.'], 'Lecture 4 · Transport – Adébáyọ̀.pdf'),
+        ]).expect(201);
+        expect(res.body.name).toBe('Lecture 4 · Transport – Adébáyọ̀.pdf');
+        await h.drain();
+    });
+
     it('groups several camera pages into one material and reads them with vision', async () => {
         const a = await signIn(h);
         const res = await upload(a.body.accessToken, [

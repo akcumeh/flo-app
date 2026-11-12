@@ -1,7 +1,9 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { useAccount } from './state/AccountContext';
+import { AddNotesScreen } from './screens/AddNotesScreen';
 import { AppearanceScreen } from './screens/AppearanceScreen';
+import { MaterialScreen } from './screens/MaterialScreen';
 import { AskScreen } from './screens/AskScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
@@ -75,6 +77,8 @@ export function App() {
                     <Route path="/prep" element={<PrepHomeScreen />} />
                     <Route path="/prep/:id" element={<PrepSessionScreen />} />
                     <Route path="/library" element={<LibraryScreen />} />
+                    <Route path="/library/add" element={<AddNotesScreen />} />
+                    <Route path="/library/:id" element={<MaterialScreen />} />
                     <Route path="/progress" element={<ProgressScreen />} />
                 </Route>
             </Route>

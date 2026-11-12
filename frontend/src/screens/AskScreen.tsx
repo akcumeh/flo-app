@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api, ApiError, type Citation } from '../api';
+import { api, ApiError, idempotencyKey, type Citation } from '../api';
 import { AnswerView } from '../components/AnswerView';
 import { Dock } from '../components/Dock';
 import { Header } from '../components/Header';
@@ -39,7 +39,7 @@ export function AskScreen() {
             const text = question.trim();
             if (!text || busy.current) return;
             busy.current = true;
-            const id = crypto.randomUUID();
+            const id = idempotencyKey();
             setTurns((prev) => [
                 ...prev,
                 { id, question: text, answer: '', citations: [], streaming: true },
@@ -86,6 +86,15 @@ export function AskScreen() {
         },
         [setBalance]
     );
+
+    useEffect(() => {
+        if (handledState.current) return;
+        const q = new URLSearchParams(location.search).get('q')?.trim();
+        if (!q) return;
+        handledState.current = true;
+        navigate('/ask', { replace: true });
+        void send(q.slice(0, 2000));
+    }, [location.search, navigate, send]);
 
     useEffect(() => {
         const state = location.state as { fromPrep?: FromPrep } | null;

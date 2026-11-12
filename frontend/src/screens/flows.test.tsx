@@ -272,6 +272,25 @@ describe('Onboarding and profile', () => {
 });
 
 describe('Ask', () => {
+    it('asks the question passed from the website once', async () => {
+        const fake = installFakeBackend();
+        fake.on('POST', '/v1/conversations', () =>
+            json({ id: 'conv-q', title: null, mode: 'ask', lastMessageAt: null }, 201)
+        );
+        fake.on('POST', '/v1/conversations/conv-q/messages', () =>
+            sse([
+                ['message.start', { messageId: 'm1', charged: 1, balance: 9 }],
+                ['delta', { text: 'Osmosis is water moving across a membrane.' }],
+                ['message.end', { messageId: 'm1', balance: 9, grounded: false }],
+            ])
+        );
+        renderAt('/ask?q=Explain%20osmosis%20simply&from=site');
+        await screen.findByText('Osmosis is water moving across a membrane.');
+        const sends = fake.calls.filter((c) => c.path === '/v1/conversations/conv-q/messages');
+        expect(sends).toHaveLength(1);
+        expect(sends[0].body).toEqual({ text: 'Explain osmosis simply' });
+    });
+
     it('creates a conversation, streams the answer with its sources and updates the balance', async () => {
         const fake = installFakeBackend();
         fake.on('POST', '/v1/conversations', () =>

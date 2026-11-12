@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { readProfile, type ProfileView } from '../profile/profile.read.js';
 import { AppError } from '../common/app-error.js';
 import { DB, type Db, type Queryable } from '../db/db.js';
 
@@ -46,6 +47,7 @@ export interface AccountView {
     tokenBalance: number;
     identities: IdentityView[];
     student: StudentView;
+    profile: ProfileView;
     createdAt: string;
 }
 
@@ -93,6 +95,7 @@ export class AccountsService {
                 verifiedAt: new Date(i.verified_at).toISOString(),
             })),
             student: await studentStatus(q, accountId),
+            profile: await readProfile(q, accountId),
             createdAt: new Date(a.created_at).toISOString(),
         };
     }

@@ -1,6 +1,6 @@
-import { API_URL, ApiError, authedFetch, client, idempotencyKey, readProblem } from './http';
+import { client, idempotencyKey } from './http';
 import { postStream } from './stream';
-import type { Account, ChatEvent, Citation, FlorenceApi, PrepSession, StoredFile } from './types';
+import type { Account, ChatEvent, Citation, FlorenceApi, PrepSession } from './types';
 
 const POLL_MS = 800;
 const POLL_LIMIT = 150;
@@ -115,20 +115,6 @@ export const api: FlorenceApi = {
     },
 };
 
-export async function uploadFiles(files: File[], courseId?: string): Promise<StoredFile> {
-    const form = new FormData();
-    for (const f of files) form.append('pages', f, f.name);
-    if (courseId) form.append('courseId', courseId);
-    const res = await authedFetch(
-        new Request(`${API_URL}/v1/files`, {
-            method: 'POST',
-            credentials: 'include',
-            body: form,
-        })
-    );
-    if (!res.ok) throw new ApiError(res.status, await readProblem(res));
-    return (await res.json()) as StoredFile;
-}
-
+export { deleteFile, formatSize, getFile, listCourses, uploadFiles } from './library';
 export { ApiError, client, idempotencyKey, session, refreshAccessToken } from './http';
 export * from './types';

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AppError } from '../common/app-error.js';
 import { DB, type Db, type Queryable } from '../db/db.js';
+import { readProfile } from './profile.read.js';
 import { FilesService, type StoredFileView } from '../files/files.service.js';
 import { ReferralsService } from '../platform/referrals.service.js';
 import { ProgressService } from '../study/progress.service.js';
@@ -84,37 +85,7 @@ export class ProfileService {
     }
 
     async profile(accountId: string, q: Queryable = this.db): Promise<ProfileView> {
-        const rows = await q.query<{
-            school_id: string | null;
-            department_id: string | null;
-            department_name: string | null;
-            level: number | null;
-            exam_date: Date | string | null;
-            onboarding_complete: boolean;
-        }>(
-            `select p.school_id, p.department_id, d.name as department_name, p.level, p.exam_date, p.onboarding_complete
-         from profiles p left join departments d on d.id = p.department_id
-        where p.account_id = $1`,
-            [accountId]
-        );
-        const p = rows[0];
-        if (!p)
-            return {
-                school: null,
-                department: null,
-                level: null,
-                examDate: null,
-                onboardingComplete: false,
-            };
-        return {
-            school: p.school_id ? await this.school(q, p.school_id) : null,
-            department: p.department_id
-                ? { id: p.department_id, name: p.department_name as string }
-                : null,
-            level: p.level,
-            examDate: day(p.exam_date),
-            onboardingComplete: p.onboarding_complete,
-        };
+        return readProfile(q, accountId);
     }
 
     async update(accountId: string, input: ProfileUpdate): Promise<ProfileView> {

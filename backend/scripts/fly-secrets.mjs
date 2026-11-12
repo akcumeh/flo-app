@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,8 +33,18 @@ const missing = Object.entries(out)
     .filter(([, v]) => !v)
     .map(([k]) => k);
 if (missing.length > 0) throw new Error(`Missing in backend/.env: ${missing.join(', ')}`);
-process.stdout.write(
-    Object.entries(out)
-        .map(([k, v]) => `${k}=${v}`)
-        .join('\n') + '\n'
-);
+const body = Object.entries(out)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('\n');
+const at = process.argv.indexOf('--app');
+if (at === -1) {
+    process.stdout.write(`${body}\n`);
+} else {
+    const result = spawnSync('fly', ['secrets', 'import', '--stage', '-a', process.argv[at + 1]], {
+        input: `${body}\n`,
+        stdio: ['pipe', 'inherit', 'inherit'],
+        shell: process.platform === 'win32',
+    });
+    if (result.error) throw result.error;
+    process.exit(result.status ?? 1);
+}

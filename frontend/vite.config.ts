@@ -14,7 +14,7 @@ export default defineConfig({
     server: {
         port: 5180,
         strictPort: true,
-        allowedHosts: ['.*'],
+        allowedHosts: true,
         proxy: {
             '/v1': { target: api, changeOrigin: false },
             '/storage': { target: api, changeOrigin: false },

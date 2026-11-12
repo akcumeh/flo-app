@@ -68,6 +68,14 @@ describe('schools, profile and courses', () => {
             onboardingComplete: true,
         });
 
+        const me = await h.http().get('/v1/me').set(bearer(t)).expect(200);
+        expect(me.body.profile).toMatchObject({
+            school: { id: unilag },
+            department: { name: 'Biochemistry' },
+            level: 200,
+            onboardingComplete: true,
+        });
+
         const depts = await h.http().get(`/v1/schools/${unilag}/departments`).expect(200);
         expect(depts.body.items).toEqual([{ id: step2.body.department.id, name: 'Biochemistry' }]);
 

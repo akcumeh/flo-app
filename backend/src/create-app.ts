@@ -95,6 +95,7 @@ export async function createApp(options: CreateAppOptions): Promise<NestExpressA
             validateSecurity: false,
             ignoreUndocumented: true,
             fileUploader: {
+                defParamCharset: 'utf8',
                 limits: { fileSize: MAX_UPLOAD_BYTES + 1, files: MAX_PARTS + 1, fields: 10 },
             },
         })
