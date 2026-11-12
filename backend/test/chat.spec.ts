@@ -217,6 +217,22 @@ describe('Ask chat', () => {
     expect(n).toBe(0);
   });
 
+  it('charges 2 tokens when a file is attached and refunds both on failure', async () => {
+    const a = await signIn(h);
+    const t = a.body.accessToken;
+    const fileId = await upload(t);
+    const c = await conversation(t);
+    h.ai.failAfterPieces = 1;
+    const failed = parseSse(raw(await ask(t, c, { text: 'Summarise this', fileIds: [fileId] }).expect(200)));
+    expect(failed[0]).toMatchObject({ event: 'message.start', data: { charged: 2, balance: 8 } });
+    expect(failed.at(-1)).toEqual({ event: 'error', data: { code: 'answer_failed', refunded: true, balance: 10 } });
+    h.ai.failAfterPieces = null;
+    const ok = parseSse(raw(await ask(t, c, { text: 'Summarise this', fileIds: [fileId] }).expect(200)));
+    expect(ok.at(-1)).toMatchObject({ event: 'message.end', data: { balance: 8 } });
+    const list = await h.http().get(`/v1/conversations/${c}/messages`).set(bearer(t)).expect(200);
+    expect(list.body.items.map((m: { charged: number }) => m.charged)).toEqual([2, 2, 2]);
+  });
+
   it('sends the earlier turns and attached photos to the model', async () => {
     const a = await signIn(h);
     const t = a.body.accessToken;

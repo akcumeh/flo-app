@@ -1017,8 +1017,9 @@ paths:
       operationId: sendMessage
       summary: Send a message and stream Florence's reply
       description: |
-        Responds with `text/event-stream`. Every question costs 1 token, with or without `fileIds`
-        (owner rule), charged before the model call starts. If the stream fails or the client
+        Responds with `text/event-stream`. A text-only question costs 1 token. A question with any
+        `fileIds` (photo, PDF or document) costs 2 tokens, as in the bots. The charge is taken before
+        the model call starts. If the stream fails or the client
         disconnects before `message.end`, the charge is refunded once and the `error` event carries
         `refunded: true`. A retry with the same `Idempotency-Key` after a failure charges again.
 

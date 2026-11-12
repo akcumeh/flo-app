@@ -69,15 +69,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     aiModel: env.AI_MODEL || 'claude-sonnet-5-5',
     publicApiUrl: (env.PUBLIC_API_URL || `http://localhost:${env.PORT ?? 3000}`).replace(/\/+$/, ''),
     storageDir: env.STORAGE_DIR || '.storage',
-    supabaseUrl: env.SUPABASE_URL?.replace(/\/+$/, '') || null,
-    supabaseServiceKey: env.SUPABASE_SERVICE_KEY || null,
+    supabaseUrl: (env.SUPABASE_URL || supabaseUrlFrom(env.SUPABASE_DB_URL))?.replace(/\/+$/, '') || null,
+    supabaseServiceKey: env.SUPABASE_SECRET_KEY || env.SUPABASE_SK || env.SUPABASE_SERVICE_KEY || null,
     storageBucket: env.STORAGE_BUCKET || 'materials',
-    paystackSecretKey: env.PAYSTACK_SECRET_KEY || null,
+    paystackSecretKey: (production ? env.PAYSTACK_SK_LIVE : env.PAYSTACK_SK_TEST) || env.PAYSTACK_SECRET_KEY || null,
     vapidPublicKey: env.VAPID_PUBLIC_KEY || null,
     vapidPrivateKey: env.VAPID_PRIVATE_KEY || null,
     vapidSubject: env.VAPID_SUBJECT || 'mailto:support@florence.app',
     appUrl: (env.APP_URL || env.WEB_ORIGIN || 'http://localhost:5180').replace(/\/+$/, ''),
   };
+}
+
+export function supabaseUrlFrom(dbUrl: string | undefined): string | null {
+  if (!dbUrl) return null;
+  const ref = /@db\.([a-z0-9]+)\.supabase\.co[:/]/.exec(dbUrl)?.[1] ?? /\/\/postgres\.([a-z0-9]+)[:@]/.exec(dbUrl)?.[1];
+  return ref ? `https://${ref}.supabase.co` : null;
 }
 
 export const CONFIG = Symbol('CONFIG');

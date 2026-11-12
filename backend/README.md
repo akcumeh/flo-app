@@ -1,6 +1,6 @@
 # Florence API
 
-NestJS 12 (ES modules) on Postgres. The contract is `openapi.yaml`. Requests and responses are validated against it in every test, so the code cannot drift from the spec without a test failing.
+NestJS 12 (ES modules) on Postgres. The contract is `openapi.yaml`: every test validates requests and responses against it, and `npm test` first checks that each of its 77 operations has at least one test request.
 
 ## Run
 
@@ -10,7 +10,7 @@ npm run migrate
 npm run dev
 ```
 
-`npm run migrate` applies `db/migrations/*.sql` to `DATABASE_URL`. It is not run on boot.
+`npm run migrate` applies `db/migrations/*.sql` to `DATABASE_URL`. It is not run on boot. On Fly.io it runs as the release command.
 
 ```bash
 npm test
@@ -18,31 +18,50 @@ npm run lint:spec
 npm run build
 ```
 
-Tests run on Vitest against an in-memory Postgres (PGlite), so they need no database.
+Tests run on Vitest against an in-memory Postgres (PGlite), so they need no database. External services are replaced by fakes in tests: the AI provider, storage, Paystack, Web Push and the Telegram messenger.
 
-## What exists
+## What is built
 
-10 of the 77 operations in the spec:
+All 77 operations answer. The five leaderboard and Wrapped operations are skeletons: boards stay `not_open` and Wrapped answers 409 `wrapped_not_ready`.
 
-| Area | Endpoints |
+| Area | Notes |
 |---|---|
-| System | `GET /v1/health`, `GET /v1/status` |
-| Email sign-in | `POST /v1/auth/email/start`, `/email/verify`, `/refresh`, `/logout` |
-| Account | `GET /v1/me`, `PATCH /v1/me` |
-| Tokens | `GET /v1/tokens`, `GET /v1/tokens/ledger` |
+| Sign-in | Email codes, Telegram deep link and WhatsApp code challenges claimed by the bots, Telegram Login Widget and OIDC, Google ID tokens. With a bearer token each one links instead. Merge moves balances and 26 tables in one transaction |
+| Student status | School email codes with plus-tag stripping and a disposable-domain list, or Google `hd`. 10 tokens once per address and per account |
+| Library | Uploads up to 20 MB (one PDF, one voice note, or up to 30 page photos as one material), dedupe by content hash, a 20 file cap, PDF text per page, OCR for scans and photos, page-numbered chunks with `tsvector`, topics |
+| Study | 1 token per session at start, refunded once on failed generation or zero answers. Quiz, flashcards, fill in the blank and mock exam. Local marking for choice items, model marking for written ones. 48 hour offline answers |
+| Streak | Study days, the freeze and the 7-day reward, replayed from study days in Africa/Lagos time |
+| Ask | Streamed over SSE, 1 token for a text question and 2 with a file or photo attached, refunded once on failure or a closed stream. Answers cite file and page from the student's own chunks |
+| Guest | 3 free questions per device, claimable after sign-up |
+| Money | Paystack card and bank transfer, webhook with signature check, one credit per reference |
+| Platform | Web Push, daily reminders (never after 22:00 Lagos), referral reward, JSON data export, deletion after a 7 day grace |
+| Bots | `POST /internal/v1/events` and `GET /internal/v1/streak` behind `X-Service-Key` |
 
-Every other path in the spec answers `501 not_implemented`.
+Background work runs in the API process: a Postgres-backed job queue (file reading, session generation, exports) and a 5 minute scheduler (closing the Lagos day, reminders, account erasure).
 
-Behaviour that is built and tested:
-- 6 digit email codes, 10 minute expiry, 5 wrong tries lock a code, 3 sends per address and 10 per IP per hour.
-- Refresh tokens rotate on every use. Replaying an old one revokes the whole family.
-- New accounts get 10 tokens once, guarded on the account, so signing in again never grants them again.
-- The token ledger changes balances in one statement. A balance cannot go below zero, a repeated idempotency key applies once, and a charge gets at most one refund.
+## Configuration
 
-## Not built, and known gaps
+`.env.example` lists every variable. In production the API refuses to start without `DATABASE_URL`, `JWT_SECRET`, `CODE_PEPPER`, `INTERNAL_API_SECRET`, the Resend mail driver, `ANTHROPIC_API_KEY`, the Supabase storage keys and the VAPID key pair. `node scripts/generate-vapid.mjs .env` writes a VAPID pair.
 
-- Email is printed to the console. No real mail provider is connected.
-- Linking an identity to a signed-in account answers 501.
-- Telegram, WhatsApp, Google and student verification.
-- Study sessions, streak, leaderboard, Wrapped, courses, guest Ask, chat, files, push, payments and the bot endpoints.
-- Nothing has been run against a real Postgres through the `pg` driver. The migration and queries run on PGlite, which is real Postgres compiled to WebAssembly.
+Outside production the API uses Paystack only with a test key (`sk_test_...`).
+
+## Scripts
+
+| Script | What it does |
+|---|---|
+| `scripts/spec-coverage.mjs` | Fails when an operation in the spec has no test request. Runs inside `npm test` |
+| `scripts/live-check-ai.ts` | Sends a 3-page PDF to Anthropic for transcription and topics |
+| `scripts/live-check-study.ts` | Generates 4 quiz items and marks one written answer with Anthropic |
+| `scripts/live-check-ask.ts` | Uploads a PDF and streams one cited answer through the API |
+| `scripts/load-check.ts` | 200 concurrent Ask streams for 60 seconds with the fake AI provider |
+| `scripts/generate-vapid.mjs` | Adds a VAPID key pair to an env file |
+
+## Deploy
+
+`Dockerfile` and `fly.toml` target one long-lived Fly.io machine, since streams and background jobs need a process that stays up. `/v1/health` is the host check. Logs are JSON lines with a request id, which is also returned as `X-Request-Id`.
+
+## Known gaps
+
+- Not yet run against Supabase Postgres through the `pg` driver. Everything has run on PGlite, which is Postgres compiled to WebAssembly.
+- Voice notes are refused with 422 `voice_not_available` until a transcription provider is chosen.
+- Live checks so far: Anthropic reads, generation, marking and streaming. Paystack, Resend, Google, Supabase Storage and Web Push to a real browser have not been run live.

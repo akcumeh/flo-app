@@ -63,7 +63,7 @@ export interface AppDeps {
 
 function defaultPaystack(config: Config): PaystackClient {
   const key = config.paystackSecretKey;
-  if (!key) return new DisabledPaystack('PAYSTACK_SECRET_KEY is not set');
+  if (!key) return new DisabledPaystack('PAYSTACK_SK_TEST (or PAYSTACK_SK_LIVE in production) is not set');
   if (config.nodeEnv !== 'production' && !key.startsWith('sk_test_')) {
     return new DisabledPaystack('Outside production the API only uses a Paystack test key (sk_test_)');
   }
@@ -89,7 +89,7 @@ function defaultStorage(config: Config): ObjectStorage {
   if (config.supabaseUrl && config.supabaseServiceKey) {
     return new SupabaseStorage(config.supabaseUrl, config.supabaseServiceKey, config.storageBucket);
   }
-  if (config.nodeEnv === 'production') throw new Error('Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_KEY');
+  if (config.nodeEnv === 'production') throw new Error('Missing required environment variables: SUPABASE_URL (or SUPABASE_DB_URL), SUPABASE_SECRET_KEY');
   return new LocalDiskStorage(config.storageDir, config.publicApiUrl, config.codePepper);
 }
 

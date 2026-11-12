@@ -12,6 +12,11 @@ import { TokensService } from '../tokens/tokens.service.js';
 import { CitationFilter, type SseWriter } from './sse.js';
 
 export const ASK_COST = 1;
+export const ASK_WITH_FILES_COST = 2;
+
+export function askCost(fileIds: string[] = []): number {
+  return fileIds.length > 0 ? ASK_WITH_FILES_COST : ASK_COST;
+}
 const HISTORY_MESSAGES = 10;
 const TOP_CHUNKS = 6;
 const RANK_THRESHOLD = 0.01;
@@ -255,6 +260,7 @@ export class ChatService {
     }
     const files = await this.attachedFiles(accountId, input.fileIds ?? []);
     const text = (input.text ?? '').trim();
+    const cost = askCost(files.map((f) => f.id));
     if (!text) throw AppError.unprocessable('empty_message', 'Type a question first.');
 
     const started = await this.db.transaction(async (q) => {
@@ -286,12 +292,12 @@ export class ChatService {
         );
       }
 
-      const { balance } = await this.tokens.debit(q, accountId, ASK_COST, 'chat_charge', {
+      const { balance } = await this.tokens.debit(q, accountId, cost, 'chat_charge', {
         idempotencyKey: `chat:${request.id}:${request.attempts}`,
         refType: 'request',
         refId: `${request.id}:${request.attempts}`,
       });
-      await q.query('update requests set charged = $2 where id = $1', [request.id, ASK_COST]);
+      await q.query('update requests set charged = $2 where id = $1', [request.id, cost]);
       const userMessage = await q.query<{ id: string }>(
         "select id from messages where request_id = $1 and role = 'user'",
         [request.id]
@@ -299,7 +305,7 @@ export class ChatService {
       if (userMessage.length === 0) {
         await q.query(
           `insert into messages (conversation_id, role, content, request_id, charged) values ($1, 'user', $2, $3, $4)`,
-          [conversationId, JSON.stringify({ text, fileIds: files.map((f) => f.id) }), request.id, ASK_COST]
+          [conversationId, JSON.stringify({ text, fileIds: files.map((f) => f.id) }), request.id, cost]
         );
       }
       await q.query('update conversations set last_message_at = now() where id = $1', [conversationId]);
@@ -309,7 +315,7 @@ export class ChatService {
     if ('replay' in started) return { replay: started.replay as ReturnType<typeof messageView> };
     const { request, balance } = started;
     return {
-      run: (writer) => this.answer(writer, { accountId, conversation, request, balance, text, files, context: input.context }),
+      run: (writer) => this.answer(writer, { accountId, conversation, request, balance, cost, text, files, context: input.context }),
     };
   }
 
@@ -368,13 +374,14 @@ export class ChatService {
       conversation: { id: string; title: string | null };
       request: { id: string; attempts: number };
       balance: number;
+      cost: number;
       text: string;
       files: Array<{ id: string; name: string; kind: string }>;
       context?: { sessionId: string; itemId: number };
     }
   ) {
     const messageId = randomUUID();
-    writer.event('message.start', { messageId, charged: ASK_COST, balance: ctx.balance });
+    writer.event('message.start', { messageId, charged: ctx.cost, balance: ctx.balance });
     const filter = new CitationFilter();
     let sources: Source[] = [];
     let full = '';
@@ -445,7 +452,7 @@ export class ChatService {
       await q.query(
         `insert into messages (id, conversation_id, role, content, citations, grounded, request_id, charged)
          values ($1, $2, 'assistant', $3, $4, $5, $6, $7)`,
-        [messageId, ctx.conversation.id, JSON.stringify({ text: full }), JSON.stringify(citations), grounded, ctx.request.id, ASK_COST]
+        [messageId, ctx.conversation.id, JSON.stringify({ text: full }), JSON.stringify(citations), grounded, ctx.request.id, ctx.cost]
       );
       await q.query(`update requests set status = 'completed', finished_at = now() where id = $1`, [ctx.request.id]);
       await q.query('update conversations set last_message_at = now() where id = $1', [ctx.conversation.id]);
@@ -461,7 +468,8 @@ export class ChatService {
 
   private async failRequest(accountId: string, request: { id: string; attempts: number }) {
     await this.db.transaction(async (q) => {
-      await this.tokens.credit(q, accountId, ASK_COST, 'refund', {
+      const [{ charged }] = await q.query<{ charged: number }>('select charged from requests where id = $1', [request.id]);
+      await this.tokens.credit(q, accountId, charged || ASK_COST, 'refund', {
         refType: 'request',
         refId: `${request.id}:${request.attempts}`,
         idempotencyKey: `refund:chat:${request.id}:${request.attempts}`,
