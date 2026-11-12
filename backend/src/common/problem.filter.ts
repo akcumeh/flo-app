@@ -23,12 +23,14 @@ export class ProblemFilter implements ExceptionFilter {
     let code = 'internal_error';
     let title = 'Something went wrong';
     let detail: string | undefined;
+    let extra: Record<string, unknown> = {};
 
     if (exception instanceof AppError) {
       status = exception.status;
       code = exception.code;
       title = exception.title;
       detail = exception.detail;
+      extra = exception.extra;
       for (const [k, v] of Object.entries(exception.headers)) res.setHeader(k, v);
     } else if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -54,6 +56,7 @@ export class ProblemFilter implements ExceptionFilter {
         code,
         ...(detail ? { detail } : {}),
         requestId,
+        ...extra,
       });
   }
 }

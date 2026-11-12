@@ -6,6 +6,7 @@ import { AppError } from '../common/app-error.js';
 import { CONFIG, type Config } from '../config.js';
 import { DB, type Db, type Queryable } from '../db/db.js';
 import { TokensService } from '../tokens/tokens.service.js';
+import { IdentityService, type ProvenIdentity } from './identity.service.js';
 import { MAILER, type Mailer } from './mailer.js';
 
 export const ACCESS_TTL_SECONDS = 900;
@@ -35,7 +36,8 @@ export class AuthService {
     @Inject(CONFIG) private readonly config: Config,
     @Inject(MAILER) private readonly mailer: Mailer,
     @Inject(AccountsService) private readonly accounts: AccountsService,
-    @Inject(TokensService) private readonly tokens: TokensService
+    @Inject(TokensService) private readonly tokens: TokensService,
+    @Inject(IdentityService) private readonly identities: IdentityService
   ) {}
 
   private hashCode(email: string, code: string): string {
@@ -52,11 +54,6 @@ export class AuthService {
 
   static canonicalEmail(email: string): string {
     return email.trim().toLowerCase();
-  }
-
-  private static mask(email: string): string {
-    const [local, domain] = email.split('@');
-    return `${local.slice(0, 1)}***@${domain}`;
   }
 
   async startEmail(rawEmail: string, ip: string): Promise<void> {
@@ -117,47 +114,53 @@ export class AuthService {
       );
       if (consumed.length === 0) throw AppError.badRequest('invalid_code', 'That code is wrong or has expired.');
 
-      const { accountId, isNew } = await this.resolveEmailAccount(q, email);
-      let granted = false;
-      if (isNew) {
-        const claim = await q.query(
-          'update accounts set app_bonus_granted_at = now() where id = $1 and app_bonus_granted_at is null returning id',
-          [accountId]
-        );
-        if (claim.length > 0) {
-          await this.tokens.credit(q, accountId, WELCOME_TOKENS, 'welcome_grant', { idempotencyKey: 'welcome' });
-          granted = true;
-        }
-      }
-
-      const session = await this.openSession(q, accountId, null, userAgent);
-      return {
-        ...session,
-        account: await this.accounts.view(accountId, q),
-        isNewAccount: isNew,
-        welcomeGrant: { granted, tokens: granted ? WELCOME_TOKENS : 0 },
-      };
+      return this.signInWith(q, AuthService.emailIdentity(email), userAgent);
     });
   }
 
-  private async resolveEmailAccount(q: Queryable, email: string): Promise<{ accountId: string; isNew: boolean }> {
-    const found = await q.query<{ account_id: string }>(
-      `select account_id from identities where provider = 'email' and provider_user_id = $1`,
-      [email]
-    );
-    if (found.length > 0) return { accountId: found[0].account_id, isNew: false };
-
+  static emailIdentity(email: string): ProvenIdentity {
     const local = email.split('@')[0] ?? 'Student';
-    const name = local.charAt(0).toUpperCase() + local.slice(1, 40);
-    const [{ id }] = await q.query<{ id: string }>('insert into accounts (display_name) values ($1) returning id', [name]);
-    await q.query(
-      `insert into identities (account_id, provider, provider_user_id, display) values ($1, 'email', $2, $3)`,
-      [id, email, AuthService.mask(email)]
-    );
-    return { accountId: id, isNew: true };
+    return {
+      provider: 'email',
+      providerUserId: email,
+      display: IdentityService.maskEmail(email),
+      displayName: local.charAt(0).toUpperCase() + local.slice(1, 40),
+    };
   }
 
-  private async openSession(
+  async signInWith(q: Queryable, identity: ProvenIdentity, userAgent: string | null): Promise<SignInResult> {
+    const { accountId, isNew } = await this.identities.findOrCreate(q, identity);
+    let granted = false;
+    if (isNew) {
+      const claim = await q.query(
+        'update accounts set app_bonus_granted_at = now() where id = $1 and app_bonus_granted_at is null returning id',
+        [accountId]
+      );
+      if (claim.length > 0) {
+        await this.tokens.credit(q, accountId, WELCOME_TOKENS, 'welcome_grant', { idempotencyKey: 'welcome' });
+        granted = true;
+      }
+    }
+    return this.sessionFor(q, accountId, isNew, granted, userAgent);
+  }
+
+  async sessionFor(
+    q: Queryable,
+    accountId: string,
+    isNew: boolean,
+    granted: boolean,
+    userAgent: string | null
+  ): Promise<SignInResult> {
+    const session = await this.openSession(q, accountId, null, userAgent);
+    return {
+      ...session,
+      account: await this.accounts.view(accountId, q),
+      isNewAccount: isNew,
+      welcomeGrant: { granted, tokens: granted ? WELCOME_TOKENS : 0 },
+    };
+  }
+
+  async openSession(
     q: Queryable,
     accountId: string,
     familyId: string | null,

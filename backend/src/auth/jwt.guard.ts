@@ -7,6 +7,13 @@ export interface AuthedRequest extends Request {
   accountId: string;
 }
 
+export function optionalAccount(req: Request, auth: AuthService): string | null {
+  const header = req.headers.authorization;
+  if (!header) return null;
+  if (!header.startsWith('Bearer ')) throw AppError.unauthorized();
+  return auth.verifyAccess(header.slice('Bearer '.length));
+}
+
 @Injectable()
 export class JwtGuard implements CanActivate {
   constructor(@Inject(AuthService) private readonly auth: AuthService) {}

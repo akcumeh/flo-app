@@ -30,12 +30,19 @@ export interface Harness {
   close: () => Promise<void>;
 }
 
-export async function startHarness(): Promise<Harness> {
+export const TEST_ENV = {
+  NODE_ENV: 'test',
+  INTERNAL_API_SECRET: 'test-internal-secret-0123456789abcdef',
+  TELEGRAM_BOT_USERNAME: 'florence_test_bot',
+  WHATSAPP_BUSINESS_NUMBER: '2348000000000',
+};
+
+export async function startHarness(env: Record<string, string> = {}): Promise<Harness> {
   const db = new PgliteDb();
   await migrate(db);
   const mailer = new TestMailer();
   const app = await createApp({
-    config: loadConfig({ NODE_ENV: 'test' } as NodeJS.ProcessEnv),
+    config: loadConfig({ ...TEST_ENV, ...env } as NodeJS.ProcessEnv),
     db,
     mailer,
     validateResponses: true,

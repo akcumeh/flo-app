@@ -4,7 +4,8 @@ export class AppError extends Error {
     public readonly code: string,
     public readonly title: string,
     public readonly detail?: string,
-    public readonly headers: Record<string, string> = {}
+    public readonly headers: Record<string, string> = {},
+    public readonly extra: Record<string, unknown> = {}
   ) {
     super(detail ?? title);
   }
@@ -21,8 +22,20 @@ export class AppError extends Error {
     return new AppError(404, 'not_found', 'Not found', detail);
   }
 
-  static conflict(code: string, detail: string) {
-    return new AppError(409, code, 'Conflict', detail);
+  static conflict(code: string, detail: string, extra: Record<string, unknown> = {}) {
+    return new AppError(409, code, 'Conflict', detail, {}, extra);
+  }
+
+  static gone(code: string, detail: string) {
+    return new AppError(410, code, 'Gone', detail);
+  }
+
+  static unprocessable(code: string, detail: string) {
+    return new AppError(422, code, 'Unprocessable', detail);
+  }
+
+  static unavailable(code: string, detail: string) {
+    return new AppError(503, code, 'Unavailable', detail);
   }
 
   static rateLimited(retryAfterSeconds: number) {
