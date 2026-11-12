@@ -1,5 +1,10 @@
+# fly.toml app configuration file generated for flo-app on 2026-11-12T21:15:05Z
+#
+# See https://docs.fly.io/reference/configuration for information about how to use this file.
+#
+
 app = "flo-app"
-primary_region = "lhr"
+primary_region = 'ams'
 
 [build]
   dockerfile = "Dockerfile"
@@ -8,9 +13,8 @@ primary_region = "lhr"
   VITE_GOOGLE_CLIENT_ID = "190488316230-n3mb7lph9t77kmeug2ji3dhm66ph84s7.apps.googleusercontent.com"
 
 [deploy]
-  release_command = "node dist/src/db/migrate-cli.js"
-
-
+  release_command = 'node dist/src/db/migrate-cli.js'
+  strategy = 'bluegreen'
 
 [env]
   PORT = "3000"
@@ -25,20 +29,15 @@ primary_region = "lhr"
   STORAGE_BUCKET = "materials"
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
-  auto_stop_machines = "off"
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
-
-  [[http_service.checks]]
-    grace_period = "20s"
-    interval = "15s"
-    method = "GET"
-    path = "/v1/health"
-    timeout = "5s"
+  checks = [{ grace_period = '20s', interval = '15s', method = 'GET', path = '/v1/health', timeout = '5s' }]
 
 [[vm]]
-  memory = "1gb"
-  cpu_kind = "shared"
+  memory = '1gb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 256
