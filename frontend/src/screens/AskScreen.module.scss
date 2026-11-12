@@ -1,137 +1,137 @@
 .page {
-  max-width: 480px;
-  min-height: 100%;
-  margin: 0 auto;
-  padding-bottom: calc(190px + env(safe-area-inset-bottom));
+    max-width: 480px;
+    min-height: 100%;
+    margin: 0 auto;
+    padding-bottom: calc(190px + env(safe-area-inset-bottom));
 }
 
 .thread {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 6px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 6px 20px 20px;
 }
 
 .fromPrep {
-  display: flex;
-  justify-content: center;
+    display: flex;
+    justify-content: center;
 }
 
 .chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px 8px 12px;
-  border-radius: 50px;
-  background: var(--color-prep-soft);
-  color: var(--color-prep-text);
-  font-weight: 700;
-  font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 8px 12px;
+    border-radius: 50px;
+    background: var(--color-prep-soft);
+    color: var(--color-prep-text);
+    font-weight: 700;
+    font-size: 13px;
 }
 
 .empty {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 40px;
 
-  h1 {
-    font-weight: 800;
-    font-size: 25px;
-    line-height: 1.15;
-    letter-spacing: -0.375px;
-  }
+    h1 {
+        font-weight: 800;
+        font-size: 25px;
+        line-height: 1.15;
+        letter-spacing: -0.375px;
+    }
 
-  p {
-    font-size: 16px;
-    line-height: 1.5;
-    color: var(--color-text-2);
-  }
+    p {
+        font-size: 16px;
+        line-height: 1.5;
+        color: var(--color-text-2);
+    }
 }
 
 .turn {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .bubbleRow {
-  display: flex;
-  justify-content: flex-end;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .bubble {
-  max-width: 290px;
-  padding: 14px 18px;
-  border-radius: 24px 24px 6px 24px;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 1.45;
+    max-width: 290px;
+    padding: 14px 18px;
+    border-radius: 24px 24px 6px 24px;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.45;
 }
 
 .error {
-  padding: 14px 18px;
-  border-radius: 20px;
-  background: var(--color-field-wrong);
-  color: var(--color-warn-text);
-  font-weight: 600;
+    padding: 14px 18px;
+    border-radius: 20px;
+    background: var(--color-field-wrong);
+    color: var(--color-warn-text);
+    font-weight: 600;
 }
 
 .composer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 55px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-key);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 55px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-key);
 }
 
 .add,
 .send {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
 }
 
 .add {
-  background: var(--color-surface-2);
-  color: var(--color-text);
+    background: var(--color-surface-2);
+    color: var(--color-text);
 }
 
 .send {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
 
-  &:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
+    &:disabled {
+        opacity: 0.35;
+        cursor: default;
+    }
 }
 
 .input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  font-weight: 500;
-  font-size: 16px;
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 500;
+    font-size: 16px;
 
-  &::placeholder {
-    color: var(--color-text-2);
-  }
+    &::placeholder {
+        color: var(--color-text-2);
+    }
 
-  &:focus {
-    outline: none;
-  }
+    &:focus {
+        outline: none;
+    }
 }

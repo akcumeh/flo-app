@@ -32,7 +32,7 @@ type Listener = (token: string | null) => void;
 let accessToken: string | null = null;
 let refreshing: Promise<string | null> | null = null;
 const listeners = new Set<Listener>();
-let onSessionLost: () => void = () => { };
+let onSessionLost: () => void = () => {};
 
 export const session = {
     get token() {
@@ -64,7 +64,10 @@ export async function readProblem(res: Response): Promise<Problem | null> {
 export function refreshAccessToken(): Promise<string | null> {
     refreshing ??= (async () => {
         try {
-            const res = await fetch(`${API_URL}/v1/auth/refresh`, { method: 'POST', credentials: 'include' });
+            const res = await fetch(`${API_URL}/v1/auth/refresh`, {
+                method: 'POST',
+                credentials: 'include',
+            });
             if (!res.ok) {
                 session.set(null);
                 return null;
@@ -87,7 +90,12 @@ function withAuth(req: Request, token: string | null): Request {
     return next;
 }
 
-const NO_REFRESH = ['/v1/auth/refresh', '/v1/auth/logout', '/v1/auth/email/start', '/v1/auth/email/verify'];
+const NO_REFRESH = [
+    '/v1/auth/refresh',
+    '/v1/auth/logout',
+    '/v1/auth/email/start',
+    '/v1/auth/email/verify',
+];
 
 export async function authedFetch(input: Request): Promise<Response> {
     const retry = input.clone();

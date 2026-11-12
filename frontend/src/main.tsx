@@ -20,15 +20,15 @@ applyAppearance();
 const queryClient = makeQueryClient();
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AccountProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </AccountProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  </StrictMode>
+    <StrictMode>
+        <QueryClientProvider client={queryClient}>
+            <BrowserRouter>
+                <AccountProvider>
+                    <ToastProvider>
+                        <App />
+                    </ToastProvider>
+                </AccountProvider>
+            </BrowserRouter>
+        </QueryClientProvider>
+    </StrictMode>
 );

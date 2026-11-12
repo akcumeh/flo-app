@@ -1,100 +1,100 @@
 @use '../styles/type';
 
 .sidebar {
-  display: none;
+    display: none;
 }
 
 @media (min-width: 900px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    width: 240px;
-    padding: 24px 16px;
-    background: var(--web-bg);
-    border-right: 1px solid var(--web-line);
-  }
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        width: 240px;
+        padding: 24px 16px;
+        background: var(--web-bg);
+        border-right: 1px solid var(--web-line);
+    }
 }
 
 .logo {
-  display: inline-flex;
-  margin: 0 8px 24px;
-  color: var(--web-text);
+    display: inline-flex;
+    margin: 0 8px 24px;
+    color: var(--web-text);
 }
 
 .nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .item {
-  @include type.body;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 0 12px;
-  border-radius: var(--app-radius-pill);
-  color: var(--web-text-2);
-  text-decoration: none;
+    @include type.body;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 12px;
+    border-radius: var(--app-radius-pill);
+    color: var(--web-text-2);
+    text-decoration: none;
 
-  &:hover {
-    background: var(--web-surface-2);
-  }
+    &:hover {
+        background: var(--web-surface-2);
+    }
 }
 
 .active {
-  @include type.body-strong;
-  background: var(--web-blue-tint);
-  color: var(--web-text);
+    @include type.body-strong;
+    background: var(--web-blue-tint);
+    color: var(--web-text);
 
-  span {
-    color: var(--web-brand-text);
-  }
+    span {
+        color: var(--web-brand-text);
+    }
 }
 
 .bottom {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: auto;
 }
 
 .me {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .meLink {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: inherit;
-  text-decoration: none;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
 }
 
 .meText {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
 }
 
 .name {
-  @include type.secondary-strong;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    @include type.secondary-strong;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .meta {
-  @include type.caption;
-  color: var(--web-text-2);
+    @include type.caption;
+    color: var(--web-text-2);
 }

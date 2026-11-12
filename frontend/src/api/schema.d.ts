@@ -170,6 +170,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/whatsapp/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a 6-digit sign-in code on WhatsApp
+         * @description Sends the approved authentication template `florence_signin_code` to the number on
+         *     WhatsApp. Nigerian local numbers (`0803 123 4567`) are read as +234. The identity is the
+         *     WhatsApp number, the same id the bot uses, so a student who has chatted with Florence on
+         *     WhatsApp signs in to that account and keeps its history.
+         *
+         *     Limits: 3 sends per hour per number, 10 per hour per IP. Answers 422 `invalid_phone` for a
+         *     number that cannot be a phone number, 422 `whatsapp_send_failed` when WhatsApp refuses the
+         *     message (for example, the number has no WhatsApp account), and 503 `channel_unavailable`
+         *     when the WhatsApp Cloud API settings are missing in production.
+         */
+        post: operations["startWhatsAppAuth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/whatsapp/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the WhatsApp code
+         * @description Five wrong attempts lock the code. With a bearer token the number is linked instead.
+         */
+        post: operations["verifyWhatsAppAuth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/google": {
         parameters: {
             query?: never;
@@ -1499,7 +1547,7 @@ export interface components {
              *     `course_required`, `request_in_progress`, `file_not_ready`, `voice_not_available`,
              *     `empty_message`, `invalid_guest_token`, `email_required`, `payments_unavailable`,
              *     `invalid_signature`, `invalid_subscription`, `invalid_referral`, `referral_too_late`,
-             *     `event_too_old`.
+             *     `event_too_old`, `invalid_phone`, `whatsapp_send_failed`, `invalid_code`, `code_locked`.
              */
             code: string;
             detail?: string;
@@ -2492,6 +2540,85 @@ export interface operations {
             200: components["responses"]["AuthSession"];
             400: components["responses"]["Problem"];
             409: components["responses"]["IdentityConflict"];
+            429: components["responses"]["RateLimited"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    startWhatsAppAuth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "phone": "0803 123 4567"
+                 *     }
+                 */
+                "application/json": {
+                    phone: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Sent. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "phone": "2348031234567",
+                     *       "display": "0803 123 4567",
+                     *       "resendAfter": 30
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Digits with country code, used for the verify call. */
+                        phone: string;
+                        /** @description The number as typed back to the student, for "We sent it on WhatsApp to ...". */
+                        display: string;
+                        /** @description Seconds before another code can be asked for. */
+                        resendAfter: number;
+                    };
+                };
+            };
+            422: components["responses"]["Problem"];
+            429: components["responses"]["RateLimited"];
+            503: components["responses"]["Problem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    verifyWhatsAppAuth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "phone": "2348031234567",
+                 *       "code": "482913"
+                 *     }
+                 */
+                "application/json": {
+                    phone: string;
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            200: components["responses"]["AuthSession"];
+            400: components["responses"]["Problem"];
+            409: components["responses"]["IdentityConflict"];
+            422: components["responses"]["Problem"];
             429: components["responses"]["RateLimited"];
             default: components["responses"]["Problem"];
         };

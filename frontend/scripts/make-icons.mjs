@@ -2,12 +2,12 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import sharp from 'sharp';
 
 const inner = (file) => {
-  const s = readFileSync(new URL(file, import.meta.url), 'utf8');
-  return s.replace(/<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+    const s = readFileSync(new URL(file, import.meta.url), 'utf8');
+    return s.replace(/<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
 };
 
 const card = (cx, cy, w, h, r, deg, fill) =>
-  `<g transform="translate(${cx} ${cy}) rotate(${deg})"><rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${r}" fill="${fill}"/></g>`;
+    `<g transform="translate(${cx} ${cy}) rotate(${deg})"><rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${r}" fill="${fill}"/></g>`;
 
 const standard = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
 <rect width="240" height="240" rx="54" fill="#0a0a0a"/>
@@ -26,7 +26,16 @@ ${card(62.548, 74.59, 63, 52, 11, -2, '#fafafa')}
 </svg>`;
 
 writeFileSync(new URL('../public/favicon.svg', import.meta.url), standard);
-await sharp(Buffer.from(standard), { density: 384 }).resize(192, 192).png().toFile(new URL('../public/icon-192.png', import.meta.url).pathname.slice(1));
-await sharp(Buffer.from(standard), { density: 384 }).resize(512, 512).png().toFile(new URL('../public/icon-512.png', import.meta.url).pathname.slice(1));
-await sharp(Buffer.from(maskable), { density: 768 }).resize(512, 512).png().toFile(new URL('../public/icon-maskable-512.png', import.meta.url).pathname.slice(1));
+await sharp(Buffer.from(standard), { density: 384 })
+    .resize(192, 192)
+    .png()
+    .toFile(new URL('../public/icon-192.png', import.meta.url).pathname.slice(1));
+await sharp(Buffer.from(standard), { density: 384 })
+    .resize(512, 512)
+    .png()
+    .toFile(new URL('../public/icon-512.png', import.meta.url).pathname.slice(1));
+await sharp(Buffer.from(maskable), { density: 768 })
+    .resize(512, 512)
+    .png()
+    .toFile(new URL('../public/icon-maskable-512.png', import.meta.url).pathname.slice(1));
 console.log('icons written');

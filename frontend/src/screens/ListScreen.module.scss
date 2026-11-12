@@ -1,81 +1,81 @@
 .page {
-  max-width: 480px;
-  min-height: 100%;
-  margin: 0 auto;
-  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    max-width: 480px;
+    min-height: 100%;
+    margin: 0 auto;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
 }
 
 .body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 20px;
 
-  h1 {
-    font-weight: 800;
-    font-size: 25px;
-    line-height: 1.15;
-    letter-spacing: -0.375px;
-  }
+    h1 {
+        font-weight: 800;
+        font-size: 25px;
+        line-height: 1.15;
+        letter-spacing: -0.375px;
+    }
 }
 
 .lead {
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--color-text-2);
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--color-text-2);
 }
 
 .row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px 12px 12px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 20px;
-  background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px 12px 12px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-surface);
 }
 
 .fileIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--color-prep-soft);
-  color: var(--color-prep-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--color-prep-soft);
+    color: var(--color-prep-text);
 }
 
 .rowText {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
 }
 
 .name {
-  font-weight: 700;
-  font-size: 14px;
+    font-weight: 700;
+    font-size: 14px;
 }
 
 .meta {
-  font-weight: 500;
-  font-size: 13px;
-  color: var(--color-text-2);
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--color-text-2);
 }
 
 .action {
-  flex-shrink: 0;
-  padding: 10px 16px;
-  border-radius: 50px;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-weight: 700;
-  font-size: 14px;
+    flex-shrink: 0;
+    padding: 10px 16px;
+    border-radius: 50px;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font-weight: 700;
+    font-size: 14px;
 
-  &:disabled {
-    opacity: 0.5;
-  }
+    &:disabled {
+        opacity: 0.5;
+    }
 }
