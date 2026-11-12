@@ -42,6 +42,11 @@ export class ProblemFilter implements ExceptionFilter {
       code = status === 400 ? 'invalid_request' : status === 404 ? 'not_found' : status === 405 ? 'method_not_allowed' : 'http_error';
       title = status === 400 ? 'Invalid request' : (err.message ?? 'Error');
       detail = err.errors?.map((e) => `${e.path ?? ''} ${e.message ?? ''}`.trim()).join('; ') || err.message;
+      if (status === 413) {
+        code = 'file_too_large';
+        title = 'Too large';
+        detail = 'Files can be at most 20 MB in total.';
+      }
     } else {
       this.logger.error(exception instanceof Error ? (exception.stack ?? exception.message) : String(exception));
     }

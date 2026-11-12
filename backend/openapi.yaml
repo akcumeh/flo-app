@@ -100,13 +100,20 @@ paths:
     post:
       tags: [Auth]
       operationId: signInWithTelegramOidc
-      summary: Finish Log in with Telegram (OIDC code flow)
+      summary: Finish Log in with Telegram (Login Widget or OIDC code flow)
       description: |
-        The browser runs the authorization code flow with PKCE (S256) against `oauth.telegram.org`
+        Accepts one of two proofs.
+
+        Login Widget: the browser sends the fields the Telegram Login Widget returned, unchanged.
+        The API checks `hash` as HMAC-SHA256 of the sorted fields, keyed with SHA-256 of the bot
+        token, and refuses an `auth_date` older than 24 hours. This needs only the bot token.
+
+        OIDC: the browser runs the authorization code flow with PKCE (S256) against `oauth.telegram.org`
         using the scopes `openid profile`. It then sends the code here. The API exchanges it using
         the bot's client id and secret (HTTP Basic), verifies the `id_token` against Telegram's
         JWKS (`iss`, `aud` equal to the bot id, `exp`), and keys the identity on the `id` claim,
-        which matches the bot's `ctx.from.id`.
+        which matches the bot's `ctx.from.id`. This needs the OIDC client id and secret, and answers
+        503 `channel_unavailable` without them.
 
         With a bearer token the identity is linked instead of signing in.
       security:
@@ -133,6 +140,8 @@ paths:
           $ref: '#/components/responses/IdentityConflict'
         '429':
           $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
 
@@ -318,6 +327,8 @@ paths:
       description: |
         If the token carries an `hd` claim that matches a known institution domain, the caller
         also becomes a verified student with no email round trip.
+
+        Answers 503 `channel_unavailable` until `GOOGLE_CLIENT_ID` is set.
       security:
         - {}
         - bearerAuth: []
@@ -341,6 +352,8 @@ paths:
           $ref: '#/components/responses/Problem'
         '409':
           $ref: '#/components/responses/IdentityConflict'
+        '503':
+          $ref: '#/components/responses/Problem'
         default:
           $ref: '#/components/responses/Problem'
 
@@ -1004,15 +1017,22 @@ paths:
       operationId: sendMessage
       summary: Send a message and stream Florence's reply
       description: |
-        Responds with `text/event-stream`. Cost is 1 token for text and 2 when `fileIds` is
-        non-empty, charged before the model call starts. If the stream fails before `message.end`,
-        the charge is refunded once and the `error` event carries `refunded: true`.
+        Responds with `text/event-stream`. Every question costs 1 token, with or without `fileIds`
+        (owner rule), charged before the model call starts. If the stream fails or the client
+        disconnects before `message.end`, the charge is refunded once and the `error` event carries
+        `refunded: true`. A retry with the same `Idempotency-Key` after a failure charges again.
+
+        Retrieval: the question is ranked against the student's chunks with `ts_rank` and the top 6
+        are sent with file names and pages. Files under about 24,000 characters named in `fileIds`
+        are sent whole. Image files in `fileIds` also go to the model as images (photo question).
+        `voiceFileId` answers 422 `voice_not_available` until a transcription provider exists.
 
         Events, in order:
         - `message.start`: `{messageId, charged, balance}`
         - `delta`: `{text}`, repeated
         - `citation`: `{fileId, label, page, snippet}`, zero or more
         - `message.end`: `{messageId, balance, grounded}`. `grounded: false` means the answer is not in the student's notes.
+        - `: keep-alive` comment lines every 15 seconds.
         - `error`: `{code, refunded, balance}`, instead of `message.end`
 
         Math arrives inside `delta` text as `$$...$$` blocks for the client to render.
@@ -1475,13 +1495,16 @@ paths:
               required: [pages]
               properties:
                 pages:
-                  type: array
-                  minItems: 1
-                  maxItems: 30
-                  items:
-                    type: string
-                    contentEncoding: base64
-                    contentMediaType: application/octet-stream
+                  description: One file, or the field repeated once per page photo (up to 30).
+                  oneOf:
+                    - type: string
+                      format: binary
+                    - type: array
+                      minItems: 1
+                      maxItems: 30
+                      items:
+                        type: string
+                        format: binary
                 courseId:
                   type: string
                   description: Attach the material to a course.
@@ -2575,7 +2598,7 @@ webhooks:
       operationId: receivePaystackEvent
       summary: Paystack event
       description: |
-        Registered in the Paystack dashboard. The body signature is HMAC SHA512 of the raw body
+        Registered in the Paystack dashboard as `POST {api}/v1/webhooks/paystack`. The body signature is HMAC SHA512 of the raw body
         with the secret key, sent in `x-paystack-signature`. On `charge.success` the purchase is
         marked paid and a `purchase` ledger row is written, once, keyed on the reference. Always
         answers 200 fast. Paystack retries on anything else.
@@ -2836,7 +2859,15 @@ components:
             `identity_belongs_to_other_account`, `last_identity`, `library_full`,
             `unknown_institution`, `channel_not_linked`, `refresh_reuse_detected`, `not_found`,
             `mode_not_possible`, `not_enough_material`, `answer_too_old`, `display_name_rejected`,
-            `guest_limit_reached`, `wrapped_not_ready`.
+            `guest_limit_reached`, `wrapped_not_ready`, `channel_unavailable`, `invalid_id_token`,
+            `invalid_telegram_auth`, `merge_token_expired`, `disposable_email`, `email_in_use`,
+            `school_required`, `unknown_department`, `invalid_course_code`, `already_enrolled`,
+            `course_not_enrolled`, `file_too_large`, `unsupported_type`, `storage_unavailable`,
+            `session_not_active`, `already_answered`, `invalid_answer`, `generation_failed`,
+            `course_required`, `request_in_progress`, `file_not_ready`, `voice_not_available`,
+            `empty_message`, `invalid_guest_token`, `email_required`, `payments_unavailable`,
+            `invalid_signature`, `invalid_subscription`, `invalid_referral`, `referral_too_late`,
+            `event_too_old`.
         detail:
           type: string
         requestId:
@@ -2854,8 +2885,33 @@ components:
               format: date-time
 
     TelegramOidcRequest:
+      oneOf:
+        - $ref: '#/components/schemas/TelegramOidcCode'
+        - $ref: '#/components/schemas/TelegramWidgetAuth'
+    TelegramWidgetAuth:
+      type: object
+      required: [id, first_name, auth_date, hash]
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        username:
+          type: string
+        photo_url:
+          type: string
+        auth_date:
+          type: integer
+        hash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+    TelegramOidcCode:
       type: object
       required: [code, codeVerifier, redirectUri]
+      additionalProperties: false
       properties:
         code:
           type: string
@@ -3919,6 +3975,20 @@ components:
           type: string
         departmentId:
           type: string
+        referralCode:
+          type: string
+          minLength: 4
+          maxLength: 12
+          description: |
+            Invite code from the link the student followed (`/r/<code>`). Accepted in the first 7 days
+            after sign-up. When the student finishes their first session, both sides get 5 tokens.
+        departmentName:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: |
+            A department typed by the student when it is not in the list. It is added to the school's
+            list, so the next student can pick it. Ignored when `departmentId` is sent.
         level:
           type: integer
           minimum: 100

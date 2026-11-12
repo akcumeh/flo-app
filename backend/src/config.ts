@@ -12,6 +12,22 @@ export interface Config {
   internalApiSecret: string;
   telegramBotUsername: string | null;
   whatsappBusinessNumber: string | null;
+  telegramBotToken: string | null;
+  telegramOidcClientId: string | null;
+  telegramOidcClientSecret: string | null;
+  googleClientId: string | null;
+  anthropicApiKey: string | null;
+  aiModel: string;
+  publicApiUrl: string;
+  storageDir: string;
+  supabaseUrl: string | null;
+  supabaseServiceKey: string | null;
+  storageBucket: string;
+  paystackSecretKey: string | null;
+  vapidPublicKey: string | null;
+  vapidPrivateKey: string | null;
+  vapidSubject: string;
+  appUrl: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -45,6 +61,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     internalApiSecret: need('INTERNAL_API_SECRET', 'dev-only-internal-secret-not-for-production-use'),
     telegramBotUsername: env.TELEGRAM_BOT_USERNAME || null,
     whatsappBusinessNumber: env.WHATSAPP_BUSINESS_NUMBER?.replace(/[^0-9]/g, '') || null,
+    telegramBotToken: env.TELEGRAM_BOT_TOKEN || null,
+    telegramOidcClientId: env.TELEGRAM_OIDC_CLIENT_ID || null,
+    telegramOidcClientSecret: env.TELEGRAM_OIDC_CLIENT_SECRET || null,
+    googleClientId: env.GOOGLE_CLIENT_ID || null,
+    anthropicApiKey: env.ANTHROPIC_API_KEY || null,
+    aiModel: env.AI_MODEL || 'claude-sonnet-5-5',
+    publicApiUrl: (env.PUBLIC_API_URL || `http://localhost:${env.PORT ?? 3000}`).replace(/\/+$/, ''),
+    storageDir: env.STORAGE_DIR || '.storage',
+    supabaseUrl: env.SUPABASE_URL?.replace(/\/+$/, '') || null,
+    supabaseServiceKey: env.SUPABASE_SERVICE_KEY || null,
+    storageBucket: env.STORAGE_BUCKET || 'materials',
+    paystackSecretKey: env.PAYSTACK_SECRET_KEY || null,
+    vapidPublicKey: env.VAPID_PUBLIC_KEY || null,
+    vapidPrivateKey: env.VAPID_PRIVATE_KEY || null,
+    vapidSubject: env.VAPID_SUBJECT || 'mailto:support@florence.app',
+    appUrl: (env.APP_URL || env.WEB_ORIGIN || 'http://localhost:5180').replace(/\/+$/, ''),
   };
 }
 
