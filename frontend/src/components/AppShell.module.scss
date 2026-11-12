@@ -1,0 +1,20 @@
+.shell {
+  min-height: 100dvh;
+  background: var(--web-bg);
+}
+
+.main {
+  min-height: 100dvh;
+}
+
+.banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+@media (min-width: 900px) {
+  .main {
+    margin-left: 240px;
+  }
+}

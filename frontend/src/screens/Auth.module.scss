@@ -1,0 +1,130 @@
+@use '../styles/type';
+
+.page {
+  display: flex;
+  min-height: 100dvh;
+  background: var(--web-bg);
+}
+
+.intro {
+  display: none;
+}
+
+.panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  color: var(--web-text);
+}
+
+.title {
+  @include type.display-m;
+  margin: 16px 0 8px;
+}
+
+.lead {
+  @include type.secondary;
+  color: var(--web-text-2);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.terms {
+  @include type.caption;
+  margin-top: auto;
+  padding-top: 32px;
+  text-align: center;
+  color: var(--web-text-2);
+}
+
+.link {
+  @include type.secondary-strong;
+  align-self: flex-start;
+  min-height: 32px;
+  color: var(--web-brand-text);
+}
+
+.resend {
+  @include type.caption;
+  color: var(--web-text-2);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.error {
+  @include type.caption;
+  color: var(--web-error);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.splash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--web-brand);
+  color: var(--web-on-brand);
+}
+
+@media (min-width: 900px) {
+  .intro {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    padding: 64px;
+    background: var(--web-brand);
+    color: var(--web-on-brand);
+  }
+
+  .introTitle {
+    @include type.display-l;
+    max-width: 440px;
+  }
+
+  .introBody {
+    @include type.body;
+    max-width: 440px;
+    opacity: 0.9;
+  }
+
+  .panel {
+    justify-content: center;
+    padding: 48px;
+  }
+
+  .terms {
+    margin-top: 32px;
+  }
+}

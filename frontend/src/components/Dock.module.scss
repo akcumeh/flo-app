@@ -1,0 +1,66 @@
+@use '../styles/type';
+
+.dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.extra {
+  padding: 8px 16px;
+  background: linear-gradient(to bottom, transparent, var(--web-bg) 24px);
+}
+
+.bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  background: var(--web-surface);
+  border-top: 1px solid var(--web-line);
+}
+
+.tab {
+  @include type.caption;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--web-text-2);
+  text-decoration: none;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 32px;
+  border-radius: var(--app-radius-pill);
+}
+
+.active {
+  color: var(--web-text);
+
+  .iconWrap {
+    background: var(--web-blue-tint);
+    color: var(--web-brand-text);
+  }
+}
+
+.label {
+  font-weight: 500;
+}
+
+@media (min-width: 900px) {
+  .dock {
+    left: 240px;
+  }
+
+  .bar {
+    display: none;
+  }
+}

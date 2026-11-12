@@ -1,0 +1,56 @@
+@use '../styles/type';
+
+.page {
+  max-width: 960px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 16px;
+}
+
+.title {
+  @include type.display-m;
+}
+
+.lead {
+  @include type.secondary;
+  color: var(--web-text-2);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.label {
+  @include type.label;
+  color: var(--web-text-2);
+}
+
+.big {
+  @include type.display-m;
+  margin-top: 4px;
+}
+
+@media (min-width: 900px) {
+  .body {
+    padding: 40px 48px;
+  }
+
+  .title {
+    @include type.display-l;
+  }
+}
