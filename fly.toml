@@ -1,4 +1,4 @@
-app = "florence-api"
+app = "flo-app"
 primary_region = "lhr"
 
 [build]
@@ -10,14 +10,16 @@ primary_region = "lhr"
 [deploy]
   release_command = "node dist/src/db/migrate-cli.js"
 
+
+
 [env]
   PORT = "3000"
   NODE_ENV = "production"
   MAIL_DRIVER = "disabled"
   DB_POOL_MAX = "5"
-  WEB_ORIGIN = "https://florence-api.fly.dev"
-  APP_URL = "https://florence-api.fly.dev"
-  PUBLIC_API_URL = "https://florence-api.fly.dev"
+  WEB_ORIGIN = "https://flo-app.fly.dev"
+  APP_URL = "https://flo-app.fly.dev"
+  PUBLIC_API_URL = "https://flo-app.fly.dev"
   TELEGRAM_BOT_USERNAME = "FlorenceAIBot"
   WHATSAPP_BUSINESS_NUMBER = "2347066975729"
   STORAGE_BUCKET = "materials"

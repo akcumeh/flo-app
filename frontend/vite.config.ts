@@ -14,6 +14,7 @@ export default defineConfig({
     server: {
         port: 5180,
         strictPort: true,
+        allowedHosts: ['.*'],
         proxy: {
             '/v1': { target: api, changeOrigin: false },
             '/storage': { target: api, changeOrigin: false },
@@ -30,7 +31,12 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.svg'],
+            includeAssets: [
+                'favicon.ico',
+                'favicon-16x16.png',
+                'favicon-32x32.png',
+                'apple-touch-icon.png',
+            ],
             manifest: {
                 name: 'Florence',
                 short_name: 'Florence',
@@ -56,7 +62,7 @@ export default defineConfig({
                 navigateFallback: '/index.html',
                 navigateFallbackDenylist: [/^\/v1\//, /^\/storage\//],
                 importScripts: ['push-sw.js'],
-                globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+                globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
             },
         }),
     ],
