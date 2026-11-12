@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import 'dotenv/config';
 import { loadConfig } from './config.js';
 import { createApp } from './create-app.js';
-import { ConsoleMailer, ResendMailer, type Mailer } from './auth/mailer.js';
+import { ConsoleMailer, DisabledMailer, ResendMailer, type Mailer } from './auth/mailer.js';
 import { PgDb } from './db/pg.db.js';
 import { JobsService } from './jobs/jobs.service.js';
 import { SchedulerService } from './jobs/scheduler.service.js';
@@ -13,7 +13,9 @@ async function main() {
     const mailer: Mailer =
         config.mailDriver === 'resend'
             ? new ResendMailer(config.resendApiKey as string, config.mailFrom as string)
-            : new ConsoleMailer();
+            : config.mailDriver === 'disabled'
+              ? new DisabledMailer()
+              : new ConsoleMailer();
     const app = await createApp({ config, db, mailer });
     await app.listen(config.port);
     app.get(JobsService).start();

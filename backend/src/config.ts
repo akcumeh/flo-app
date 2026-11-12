@@ -5,7 +5,8 @@ export interface Config {
     dbPoolMax: number;
     jwtSecret: string;
     codePepper: string;
-    mailDriver: 'console' | 'resend';
+    mailDriver: 'console' | 'resend' | 'disabled';
+    webDist: string | null;
     resendApiKey: string | null;
     mailFrom: string | null;
     webOrigin: string;
@@ -47,9 +48,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         return devDefault;
     };
 
-    const mailDriver = env.MAIL_DRIVER === 'resend' ? 'resend' : 'console';
-    if (production && mailDriver !== 'resend')
-        throw new Error('MAIL_DRIVER must be resend in production');
+    const mailDriver =
+        env.MAIL_DRIVER === 'resend'
+            ? 'resend'
+            : env.MAIL_DRIVER === 'disabled'
+              ? 'disabled'
+              : 'console';
+    if (production && mailDriver === 'console')
+        throw new Error('MAIL_DRIVER must be resend or disabled in production');
     if (mailDriver === 'resend' && (!env.RESEND_API_KEY || !env.MAIL_FROM)) {
         throw new Error('MAIL_DRIVER=resend needs RESEND_API_KEY and MAIL_FROM');
     }
@@ -65,6 +71,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         resendApiKey: env.RESEND_API_KEY || null,
         mailFrom: env.MAIL_FROM || null,
         webOrigin: env.WEB_ORIGIN ?? 'http://localhost:5180',
+        webDist: env.WEB_DIST || null,
         cookieSecure: production,
         internalApiSecret: need(
             'INTERNAL_API_SECRET',

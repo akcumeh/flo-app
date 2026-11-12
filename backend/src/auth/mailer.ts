@@ -1,3 +1,4 @@
+import { AppError } from '../common/app-error.js';
 import { Logger } from '@nestjs/common';
 
 export interface Mailer {
@@ -6,6 +7,22 @@ export interface Mailer {
 }
 
 export const MAILER = Symbol('MAILER');
+
+export class DisabledMailer implements Mailer {
+    async sendSignInCode(): Promise<void> {
+        throw AppError.unavailable(
+            'channel_unavailable',
+            'Email sign-in is not available. Use WhatsApp, Google or Telegram.'
+        );
+    }
+
+    async sendStudentCode(): Promise<void> {
+        throw AppError.unavailable(
+            'channel_unavailable',
+            'School email checks are not available yet.'
+        );
+    }
+}
 
 export class ConsoleMailer implements Mailer {
     private readonly logger = new Logger('Mailer');

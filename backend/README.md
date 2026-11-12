@@ -63,7 +63,15 @@ Outside production the API uses Paystack only with a test key (`sk_test_...`).
 
 ## Deploy
 
-`Dockerfile` and `fly.toml` target one long-lived Fly.io machine, since streams and background jobs need a process that stays up. `/v1/health` is the host check. Logs are JSON lines with a request id, which is also returned as `X-Request-Id`.
+`Dockerfile` and `fly.toml` sit at the repo root. One Fly machine in London (`lhr`, close to the Supabase database in eu-west-1) runs the API and serves the built web app from the same address, so the sign-in cookie works on phones. The release command runs migrations and the schools seed against `DATABASE_URL`.
+
+```bash
+fly apps create florence-api
+node backend/scripts/fly-secrets.mjs | fly secrets import --stage
+fly deploy
+```
+
+`scripts/fly-secrets.mjs` reads `backend/.env` and prints the production secrets, including a `DATABASE_URL` for the Supabase session pooler. It uses the Paystack test key unless `PAYSTACK_LIVE=1` is set.
 
 ## Known gaps
 

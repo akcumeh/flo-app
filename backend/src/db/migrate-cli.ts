@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { loadConfig } from '../config.js';
-import { migrate } from './migrate.js';
+import { migrate, seed } from './migrate.js';
 import { PgDb } from './pg.db.js';
 
 async function main() {
@@ -8,6 +8,7 @@ async function main() {
     try {
         const ran = await migrate(db);
         console.log(ran.length === 0 ? 'Nothing to apply.' : `Applied: ${ran.join(', ')}`);
+        console.log(`Seeded: ${(await seed(db)).join(', ')}`);
     } finally {
         await db.close();
     }

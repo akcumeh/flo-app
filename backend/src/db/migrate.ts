@@ -34,3 +34,13 @@ export async function migrate(
     }
     return ran;
 }
+
+export async function seed(db: Db, dir = join(process.cwd(), 'db', 'seed')): Promise<string[]> {
+    const files = readdirSync(dir)
+        .filter((f) => f.endsWith('.sql'))
+        .sort();
+    for (const file of files) {
+        await db.transaction(async (q) => q.exec(readFileSync(join(dir, file), 'utf8')));
+    }
+    return files;
+}

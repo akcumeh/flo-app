@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
-import { json } from 'express';
+import express, { json, type NextFunction, type Request, type Response } from 'express';
 import helmet from 'helmet';
 import { join } from 'node:path';
 import * as OpenApiValidator from 'express-openapi-validator';
@@ -17,6 +17,33 @@ export interface CreateAppOptions extends AppDeps {
     rateLimits?: boolean;
 }
 
+const API_PREFIXES = ['/v1/', '/internal/', '/storage/'];
+
+function serveWeb(app: NestExpressApplication, dir: string) {
+    const index = join(dir, 'index.html');
+    app.use(
+        express.static(dir, {
+            index: false,
+            setHeaders: (res, path) => {
+                if (/[\\/]assets[\\/]/.test(path))
+                    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+                else res.setHeader('Cache-Control', 'no-cache');
+            },
+        })
+    );
+    app.use((req: Request, res: Response, next: NextFunction) => {
+        if (
+            req.method !== 'GET' ||
+            API_PREFIXES.some((p) => req.path.startsWith(p)) ||
+            req.path === '/v1'
+        )
+            return next();
+        if (!req.accepts('html')) return next();
+        res.setHeader('Cache-Control', 'no-cache');
+        res.sendFile(index);
+    });
+}
+
 export async function createApp(options: CreateAppOptions): Promise<NestExpressApplication> {
     const app = await NestFactory.create<NestExpressApplication>(AppModule.register(options), {
         logger: options.logger === false ? false : new JsonLogger(),
@@ -26,7 +53,29 @@ export async function createApp(options: CreateAppOptions): Promise<NestExpressA
     app.set('trust proxy', 1);
     app.use(requestIds(options.logger !== false));
     if (options.rateLimits ?? options.config.nodeEnv !== 'test') app.use(rateLimit());
-    app.use(helmet());
+    app.use(
+        helmet({
+            contentSecurityPolicy: {
+                directives: {
+                    defaultSrc: ["'self'"],
+                    scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
+                    styleSrc: [
+                        "'self'",
+                        "'unsafe-inline'",
+                        'https://accounts.google.com/gsi/style',
+                    ],
+                    frameSrc: ["'self'", 'https://accounts.google.com/gsi/'],
+                    connectSrc: ["'self'", 'https://accounts.google.com/gsi/'],
+                    imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+                    fontSrc: ["'self'", 'data:'],
+                    workerSrc: ["'self'"],
+                    manifestSrc: ["'self'"],
+                },
+            },
+            crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+        })
+    );
+    if (options.config.webDist) serveWeb(app, options.config.webDist);
     app.use(cookieParser());
     app.use(
         json({
