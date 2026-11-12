@@ -1,0 +1,68 @@
+@use '../styles/type';
+
+.text {
+    @include type.body;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    color: var(--web-text);
+    overflow-wrap: anywhere;
+
+    strong {
+        font-weight: 700;
+    }
+
+    code {
+        padding: 1px 6px;
+        border-radius: 6px;
+        background: var(--web-surface-2);
+        font: 500 15px/22px var(--font-label);
+    }
+
+    pre {
+        overflow-x: auto;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: var(--web-surface-2);
+
+        code {
+            padding: 0;
+            background: none;
+        }
+    }
+}
+
+.steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.badge {
+    @include type.label;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-top: -1px;
+    border-radius: var(--app-radius-pill);
+    background: var(--web-blue-tint);
+    color: var(--web-brand-text);
+}
+
+.stepText {
+    flex: 1;
+    min-width: 0;
+}

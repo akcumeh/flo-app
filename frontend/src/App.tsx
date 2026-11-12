@@ -5,6 +5,8 @@ import { AddNotesScreen } from './screens/AddNotesScreen';
 import { AppearanceScreen } from './screens/AppearanceScreen';
 import { MaterialScreen } from './screens/MaterialScreen';
 import { AskScreen } from './screens/AskScreen';
+import { ChatHistoryScreen, SavedAnswersScreen } from './screens/AskListsScreens';
+import { GuestAskScreen } from './screens/GuestAskScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
@@ -37,6 +39,7 @@ function RequireAccount() {
     const from = `${location.pathname}${location.search}`;
     if (status === 'loading') return <Splash />;
     if (status === 'expired') return <SessionExpiredScreen from={from} />;
+    if (status === 'signedOut' && location.pathname === '/ask') return <GuestAskScreen />;
     if (status === 'signedOut') return <Navigate to="/signin" replace state={{ from }} />;
     const onboarding =
         location.pathname === '/onboarding' ||
@@ -73,7 +76,9 @@ export function App() {
                 <Route path="/settings/appearance" element={<AppearanceScreen />} />
                 <Route element={<AppShell />}>
                     <Route path="/home" element={<HomeScreen />} />
-                    <Route path="/ask" element={<AskScreen />} />
+                    <Route path="/ask/history" element={<ChatHistoryScreen />} />
+                    <Route path="/ask/saved" element={<SavedAnswersScreen />} />
+                    <Route path="/ask/:conversationId?" element={<AskScreen />} />
                     <Route path="/prep" element={<PrepHomeScreen />} />
                     <Route path="/prep/:id" element={<PrepSessionScreen />} />
                     <Route path="/library" element={<LibraryScreen />} />

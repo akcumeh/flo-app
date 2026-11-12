@@ -36,20 +36,17 @@ export async function listMessages(conversationId: string): Promise<Message[]> {
     return out;
 }
 
-export async function getConversation(conversationId: string): Promise<Conversation> {
-    return (
-        await client.GET('/v1/conversations/{conversationId}', {
-            params: { path: { conversationId } },
-        })
-    ).data as Conversation;
+export async function deleteConversation(conversationId: string): Promise<void> {
+    await client.DELETE('/v1/conversations/{conversationId}', {
+        params: { path: { conversationId } },
+    });
 }
 
 export async function setSaved(messageId: string, saved: boolean): Promise<void> {
-    if (saved) {
-        await client.PUT('/v1/messages/{messageId}/saved', { params: { path: { messageId } } });
-    } else {
-        await client.DELETE('/v1/messages/{messageId}/saved', { params: { path: { messageId } } });
-    }
+    await client.PUT('/v1/messages/{messageId}/saved', {
+        params: { path: { messageId } },
+        body: { saved },
+    });
 }
 
 export async function listSavedAnswers(): Promise<Message[]> {

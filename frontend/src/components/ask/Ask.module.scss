@@ -1,0 +1,318 @@
+@use '../../styles/type';
+
+.bubbleRow {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.bubble {
+    @include type.body;
+    max-width: 280px;
+    padding: 12px 16px;
+    border-radius: 20px 20px 6px;
+    background: var(--web-brand);
+    color: var(--web-on-brand);
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--web-line);
+    border-radius: var(--app-radius-card);
+    background: var(--web-surface);
+}
+
+.who {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.whoStar {
+    color: var(--web-sky);
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+.whoName {
+    @include type.label;
+    color: var(--web-text-2);
+}
+
+.notice {
+    @include type.caption;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--web-sun-tint);
+    color: var(--web-text);
+}
+
+.noticeIcon {
+    color: var(--web-tan-text);
+}
+
+.thinking {
+    display: flex;
+    gap: 6px;
+    padding: 8px 0;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--app-radius-pill);
+    background: var(--web-line-strong);
+    animation: pulse 1s ease-in-out infinite;
+
+    &:nth-child(2) {
+        animation-delay: 0.15s;
+    }
+
+    &:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+}
+
+@keyframes pulse {
+    50% {
+        opacity: 0.3;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dot {
+        animation: none;
+    }
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.error {
+    @include type.secondary;
+    color: var(--web-error);
+}
+
+.sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.source {
+    @include type.caption;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px 6px 10px;
+    border-radius: var(--app-radius-pill);
+    background: var(--web-surface-2);
+    color: var(--web-text);
+}
+
+.sourceIcon {
+    color: var(--web-brand-text);
+}
+
+.footnote {
+    @include type.caption;
+    color: var(--web-text-2);
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.practise {
+    @include type.secondary-strong;
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    gap: 6px;
+    color: var(--web-brand-text);
+    text-align: left;
+}
+
+.action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: -6px;
+    color: var(--web-text-2);
+}
+
+.on {
+    color: var(--web-brand-text);
+}
+
+.composer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: -8px -16px;
+    padding: 10px 16px 12px;
+    border-top: 1px solid var(--web-line);
+    background: var(--web-bg);
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.scope {
+    @include type.caption;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px 6px 10px;
+    border-radius: var(--app-radius-pill);
+    background: var(--web-blue-tint);
+    color: var(--web-brand-text);
+}
+
+.small svg {
+    width: 16px;
+    height: 16px;
+}
+
+.clear {
+    display: inline-flex;
+    margin: -4px -6px -4px 0;
+    padding: 2px;
+    color: var(--web-brand-text);
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.round {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--app-radius-pill);
+    background: var(--web-surface-2);
+    color: var(--web-text);
+
+    &:disabled {
+        cursor: default;
+        color: var(--web-text-2);
+    }
+}
+
+.send {
+    background: var(--web-brand);
+    color: var(--web-on-brand);
+}
+
+.input {
+    @include type.body;
+    flex: 1;
+    min-width: 0;
+    height: 48px;
+    padding: 0 16px;
+    border: 1.5px solid var(--web-line-strong);
+    border-radius: var(--app-radius-pill);
+    outline: 0;
+    background: var(--web-surface);
+    color: var(--web-text);
+
+    &::placeholder {
+        color: var(--web-text-2);
+    }
+
+    &:focus {
+        border-color: var(--web-brand);
+    }
+}
+
+.sheetLead {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.passage {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--web-surface-2);
+}
+
+.highlight {
+    @include type.secondary;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: var(--web-blue-tint);
+    color: var(--web-text);
+}
+
+.sheetActions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rowButton {
+    @include type.body;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 56px;
+    text-align: left;
+    color: var(--web-text);
+}
+
+.rowBrand {
+    color: var(--web-brand-text);
+}
+
+.rowLabel {
+    flex: 1;
+}
+
+.caret {
+    color: var(--web-text-2);
+}

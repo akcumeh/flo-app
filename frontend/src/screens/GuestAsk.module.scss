@@ -1,0 +1,72 @@
+@use '../styles/type';
+
+.page {
+    max-width: 640px;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    background: var(--web-bg);
+}
+
+.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: calc(56px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 16px 0;
+}
+
+.logo {
+    color: var(--web-text);
+
+    svg {
+        width: 103px;
+        height: 29px;
+    }
+}
+
+.login {
+    @include type.secondary-strong;
+    color: var(--web-brand-text);
+    text-decoration: none;
+}
+
+.thread {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px 16px 16px;
+}
+
+.turn {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hello {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 24px;
+}
+
+.title {
+    @include type.display-m;
+}
+
+.lead {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.dock {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+}

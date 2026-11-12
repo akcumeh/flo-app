@@ -47,7 +47,7 @@ describe('Sign-in', () => {
             })
         );
         const user = userEvent.setup();
-        renderAt('/ask');
+        renderAt('/ask/history');
 
         await screen.findByRole('heading', { name: 'Save your progress' });
         await user.type(screen.getByLabelText('Phone number'), '0803 123 4567');
@@ -57,7 +57,7 @@ describe('Sign-in', () => {
         expect(screen.getByText('We sent it on WhatsApp to 0803 123 4567.')).toBeInTheDocument();
         await user.type(screen.getByLabelText('Digit 1'), '482913');
 
-        await screen.findByRole('heading', { name: 'Ask anything about your course.' });
+        await screen.findByRole('heading', { name: 'Chats' });
         expect(fake.calls.find((c) => c.path === '/v1/auth/whatsapp/start')?.body).toEqual({
             phone: '0803 123 4567',
         });
@@ -65,7 +65,7 @@ describe('Sign-in', () => {
             phone: '2348031234567',
             code: '482913',
         });
-        expect(fake.calls.find((c) => c.path === '/v1/streak')?.auth).toBe('Bearer tok-new');
+        expect(fake.calls.find((c) => c.path === '/v1/conversations')?.auth).toBe('Bearer tok-new');
     });
 
     it('shows the server message when the code is wrong', async () => {
@@ -325,7 +325,8 @@ describe('Ask', () => {
         await user.click(screen.getByRole('button', { name: 'Send' }));
 
         await screen.findByText(/They need ATP from mitochondria/);
-        await screen.findByText('Cited on pages 14 and 17');
+        await screen.findByRole('button', { name: 'BIO 102 · p. 14' });
+        expect(screen.getByRole('button', { name: 'BIO 102 · p. 17' })).toBeInTheDocument();
         expect(screen.getAllByLabelText('9 tokens').length).toBeGreaterThan(0);
         const send = fake.calls.find((c) => c.path === '/v1/conversations/conv-1/messages');
         expect(send?.body).toEqual({ text: 'Why does protein building slow down?' });
