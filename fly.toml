@@ -1,42 +1,48 @@
-app = "florence-api"
-primary_region = "lhr"
+# fly.toml app configuration file generated for flo-app on 2026-11-12T18:20:09Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'flo-app'
+primary_region = 'ams'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
-[build.args]
-  VITE_GOOGLE_CLIENT_ID = "190488316230-n3mb7lph9t77kmeug2ji3dhm66ph84s7.apps.googleusercontent.com"
+  [build.args]
+    VITE_GOOGLE_CLIENT_ID = '190488316230-n3mb7lph9t77kmeug2ji3dhm66ph84s7.apps.googleusercontent.com'
 
 [deploy]
-  release_command = "node dist/src/db/migrate-cli.js"
+  release_command = 'node dist/src/db/migrate-cli.js'
 
 [env]
-  PORT = "3000"
-  NODE_ENV = "production"
-  MAIL_DRIVER = "disabled"
-  DB_POOL_MAX = "5"
-  WEB_ORIGIN = "https://florence-api.fly.dev"
-  APP_URL = "https://florence-api.fly.dev"
-  PUBLIC_API_URL = "https://florence-api.fly.dev"
-  TELEGRAM_BOT_USERNAME = "FlorenceAIBot"
-  WHATSAPP_BUSINESS_NUMBER = "2347066975729"
-  STORAGE_BUCKET = "materials"
+  APP_URL = 'https://florence-api.fly.dev'
+  DB_POOL_MAX = '5'
+  MAIL_DRIVER = 'disabled'
+  NODE_ENV = 'production'
+  PORT = '3000'
+  PUBLIC_API_URL = 'https://florence-api.fly.dev'
+  STORAGE_BUCKET = 'materials'
+  TELEGRAM_BOT_USERNAME = 'FlorenceAIBot'
+  WEB_ORIGIN = 'https://florence-api.fly.dev'
+  WHATSAPP_BUSINESS_NUMBER = '2347066975729'
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
-  auto_stop_machines = "off"
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
 
   [[http_service.checks]]
-    grace_period = "20s"
-    interval = "15s"
-    method = "GET"
-    path = "/v1/health"
-    timeout = "5s"
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '20s'
+    method = 'GET'
+    path = '/v1/health'
 
 [[vm]]
-  memory = "1gb"
-  cpu_kind = "shared"
+  memory = '1gb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 256
