@@ -1,25 +1,67 @@
 import { Logger } from '@nestjs/common';
 
+export type SendOutcome = 'sent' | 'refused' | 'blocked';
+
 export interface WhatsAppCodeSender {
     readonly live: boolean;
-    sendCode(phone: string, code: string): Promise<'sent' | 'refused'>;
+    sendCode(phone: string, code: string): Promise<SendOutcome>;
 }
 
 export const WHATSAPP_CODES = Symbol('WHATSAPP_CODES');
 
+const HEALTH_TTL_MS = 5 * 60_000;
+
+interface HealthEntity {
+    entity_type: string;
+    can_send_message?: string;
+    errors?: Array<{ error_code?: number; error_description?: string }>;
+}
+
 export class CloudApiCodeSender implements WhatsAppCodeSender {
     readonly live = true;
     private readonly logger = new Logger('WhatsAppCodes');
+    private health: { blocked: boolean; at: number } | null = null;
 
     constructor(
         private readonly accessToken: string,
         private readonly phoneNumberId: string,
         private readonly template: string,
         private readonly language: string,
-        private readonly fetchImpl: typeof fetch = fetch
+        private readonly fetchImpl: typeof fetch = fetch,
+        private readonly now: () => number = Date.now
     ) {}
 
-    async sendCode(phone: string, code: string): Promise<'sent' | 'refused'> {
+    async blocked(): Promise<boolean> {
+        if (this.health && this.now() - this.health.at < HEALTH_TTL_MS) return this.health.blocked;
+        try {
+            const res = await this.fetchImpl(
+                `https://graph.facebook.com/v22.0/${this.phoneNumberId}?fields=health_status`,
+                {
+                    headers: { Authorization: `Bearer ${this.accessToken}` },
+                    signal: AbortSignal.timeout(5_000),
+                }
+            );
+            if (!res.ok) return false;
+            const body = (await res.json()) as { health_status?: { entities?: HealthEntity[] } };
+            const stops = (body.health_status?.entities ?? []).filter(
+                (e) => e.entity_type !== 'APP' && e.can_send_message === 'BLOCKED'
+            );
+            for (const e of stops) {
+                for (const err of e.errors ?? []) {
+                    this.logger.warn(
+                        `WhatsApp ${e.entity_type} cannot send: ${err.error_code} ${err.error_description}`
+                    );
+                }
+            }
+            this.health = { blocked: stops.length > 0, at: this.now() };
+            return this.health.blocked;
+        } catch {
+            return false;
+        }
+    }
+
+    async sendCode(phone: string, code: string): Promise<SendOutcome> {
+        if (await this.blocked()) return 'blocked';
         const res = await this.fetchImpl(
             `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`,
             {
@@ -75,8 +117,10 @@ export class FakeCodeSender implements WhatsAppCodeSender {
     readonly live = false;
     readonly sent: Array<{ phone: string; code: string }> = [];
     refuse = new Set<string>();
+    blockAll = false;
 
-    async sendCode(phone: string, code: string): Promise<'sent' | 'refused'> {
+    async sendCode(phone: string, code: string): Promise<SendOutcome> {
+        if (this.blockAll) return 'blocked';
         if (this.refuse.has(phone)) return 'refused';
         this.sent.push({ phone, code });
         return 'sent';

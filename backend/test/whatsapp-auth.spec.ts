@@ -1,4 +1,4 @@
-import { normalisePhone } from '../src/auth/whatsapp-codes.js';
+import { CloudApiCodeSender, normalisePhone } from '../src/auth/whatsapp-codes.js';
 import { bearer, signIn, startHarness, uniqueIp, type Harness } from './helpers.js';
 
 describe('WhatsApp number sign-in', () => {
@@ -95,6 +95,65 @@ describe('WhatsApp number sign-in', () => {
             .send({ phone: sent.body.phone, code })
             .expect(400);
         expect(locked.body.code).toBe('code_locked');
+    });
+
+    it('answers 503 and keeps no code when Meta blocks the account from sending', async () => {
+        h.whatsappCodes.blockAll = true;
+        try {
+            const res = await start('08031230000').expect(503);
+            expect(res.body.code).toBe('channel_unavailable');
+            expect(res.body.detail).toContain('Continue with Google');
+            const [{ n }] = await h.db.query<{ n: number }>(
+                "select count(*)::int as n from phone_codes where phone = '2348031230000'"
+            );
+            expect(n).toBe(0);
+        } finally {
+            h.whatsappCodes.blockAll = false;
+        }
+    });
+
+    it('reads a blocked account from Meta health status and caches it for 5 minutes', async () => {
+        let clock = 0;
+        const calls: string[] = [];
+        const health = (state: string) => ({
+            health_status: {
+                can_send_message: state,
+                entities: [
+                    { entity_type: 'PHONE_NUMBER', can_send_message: 'AVAILABLE' },
+                    {
+                        entity_type: 'WABA',
+                        can_send_message: state,
+                        errors: [{ error_code: 141006, error_description: 'payment method' }],
+                    },
+                    { entity_type: 'APP', can_send_message: 'BLOCKED' },
+                ],
+            },
+        });
+        let state = 'BLOCKED';
+        const fetchImpl = (async (url: string) => {
+            calls.push(String(url));
+            if (String(url).includes('health_status')) {
+                return new Response(JSON.stringify(health(state)), { status: 200 });
+            }
+            return new Response(JSON.stringify({ messages: [{ id: 'wamid.1' }] }), { status: 200 });
+        }) as unknown as typeof fetch;
+        const sender = new CloudApiCodeSender(
+            't',
+            'p',
+            'florence_signin_code',
+            'en',
+            fetchImpl,
+            () => clock
+        );
+
+        expect(await sender.sendCode('2348031230000', '123456')).toBe('blocked');
+        state = 'AVAILABLE';
+        clock = 60_000;
+        expect(await sender.sendCode('2348031230000', '123456')).toBe('blocked');
+        clock = 6 * 60_000;
+        expect(await sender.sendCode('2348031230000', '123456')).toBe('sent');
+        expect(calls.filter((c) => c.includes('health_status'))).toHaveLength(2);
+        expect(calls.filter((c) => c.endsWith('/messages'))).toHaveLength(1);
     });
 
     it('answers 422 for a bad number and when WhatsApp refuses the message', async () => {

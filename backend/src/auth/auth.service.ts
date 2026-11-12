@@ -9,7 +9,12 @@ import { DB, type Db, type Queryable } from '../db/db.js';
 import { TokensService } from '../tokens/tokens.service.js';
 import { IdentityService, type MergeOffer, type ProvenIdentity } from './identity.service.js';
 import { MAILER, type Mailer } from './mailer.js';
-import { normalisePhone, WHATSAPP_CODES, type WhatsAppCodeSender } from './whatsapp-codes.js';
+import {
+    normalisePhone,
+    WHATSAPP_CODES,
+    type SendOutcome,
+    type WhatsAppCodeSender,
+} from './whatsapp-codes.js';
 
 export const ACCESS_TTL_SECONDS = 900;
 export const REFRESH_TTL_DAYS = 30;
@@ -176,7 +181,7 @@ export class AuthService {
        values ($1, $2, $3, now() + make_interval(mins => $4)) returning id`,
             [phone, this.hashCode(`wa:${phone}`, code), ipHash, CODE_TTL_MINUTES]
         );
-        let outcome: 'sent' | 'refused';
+        let outcome: SendOutcome;
         try {
             outcome = await this.whatsappCodes.sendCode(phone, code);
         } catch {
@@ -184,6 +189,13 @@ export class AuthService {
             throw AppError.unavailable(
                 'channel_unavailable',
                 'WhatsApp is not answering right now. Try again in a minute.'
+            );
+        }
+        if (outcome === 'blocked') {
+            await this.db.query('delete from phone_codes where id = $1', [row.id]);
+            throw AppError.unavailable(
+                'channel_unavailable',
+                "WhatsApp codes aren't working right now. Continue with Google instead."
             );
         }
         if (outcome === 'refused') {
