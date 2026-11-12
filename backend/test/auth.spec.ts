@@ -133,13 +133,13 @@ describe('auth, account and tokens', () => {
     await h.http().post('/v1/auth/refresh').set('Cookie', s.cookie).expect(401);
   });
 
-  it('answers 501 for endpoints that are in the spec but not built', async () => {
+  it('answers 404 for paths that are not in the spec', async () => {
     const s = await signIn(h);
     const res = await h
       .http()
-      .get('/v1/streak')
+      .get('/v1/not-a-route')
       .set('Authorization', `Bearer ${s.body.accessToken}`)
-      .expect(501);
-    expect(res.body.code).toBe('not_implemented');
+      .expect(404);
+    expect(res.body.code).toBe('not_found');
   });
 });
