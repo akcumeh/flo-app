@@ -2,6 +2,7 @@ export interface Config {
   nodeEnv: string;
   port: number;
   databaseUrl: string;
+  dbPoolMax: number;
   jwtSecret: string;
   codePepper: string;
   mailDriver: 'console' | 'resend';
@@ -51,6 +52,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     nodeEnv,
     port: Number(env.PORT ?? 3000),
     databaseUrl: need('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/postgres'),
+    dbPoolMax: Math.max(1, Number(env.DB_POOL_MAX) || 10),
     jwtSecret: need('JWT_SECRET', 'dev-only-jwt-secret-not-for-production-use'),
     codePepper: need('CODE_PEPPER', 'dev-only-code-pepper-not-for-production-use'),
     mailDriver,

@@ -8,3 +8,4 @@ dev-dist/
 *.log
 .DS_Store
 .storage/
+.pglite/

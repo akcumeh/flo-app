@@ -9,7 +9,7 @@ import { SchedulerService } from './jobs/scheduler.service.js';
 
 async function main() {
   const config = loadConfig();
-  const db = new PgDb(config.databaseUrl);
+  const db = new PgDb(config.databaseUrl, { max: config.dbPoolMax });
   const mailer: Mailer =
     config.mailDriver === 'resend'
       ? new ResendMailer(config.resendApiKey as string, config.mailFrom as string)
