@@ -1,3 +1,4 @@
+import { realClientIp } from './common/client-ip.js';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
@@ -51,6 +52,7 @@ export async function createApp(options: CreateAppOptions): Promise<NestExpressA
     });
 
     app.set('trust proxy', 1);
+    app.use(realClientIp);
     app.use(requestIds(options.logger !== false));
     if (options.rateLimits ?? options.config.nodeEnv !== 'test') app.use(rateLimit());
     app.use(
