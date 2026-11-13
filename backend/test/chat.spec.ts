@@ -442,11 +442,21 @@ describe('guest Ask', () => {
         await h.close();
     });
 
-    function askGuest(token: string, text: string) {
+    let ipSeq = 0;
+    const nextIp = () => `198.51.100.${(ipSeq += 1)}`;
+
+    function startGuest(ip: string, opts: { cookie?: string; visitorId?: string } = {}) {
+        const req = h.http().post('/v1/guest/sessions').set('X-Forwarded-For', ip);
+        if (opts.cookie) req.set('Cookie', opts.cookie);
+        return opts.visitorId ? req.send({ visitorId: opts.visitorId }) : req;
+    }
+
+    function askGuest(token: string, text: string, ip = '198.51.100.250') {
         return h
             .http()
             .post('/v1/guest/messages')
             .set('X-Guest-Token', token)
+            .set('X-Forwarded-For', ip)
             .buffer(true)
             .parse((res, done) => {
                 let body = '';
@@ -457,35 +467,26 @@ describe('guest Ask', () => {
             .send({ text });
     }
 
-    it('gives 3 free answers per device, blocks the 4th, and moves the chat into an account', async () => {
+    it('gives 2 free answers per device, blocks the 3rd, and moves the chat into an account', async () => {
         h.ai.respond = () => 'Guest answer.';
-        const start = await h.http().post('/v1/guest/sessions').expect(201);
-        expect(start.body.questionsLeft).toBe(3);
+        const ip = nextIp();
+        const start = await startGuest(ip).expect(201);
+        expect(start.body.questionsLeft).toBe(2);
         const cookie = (start.headers['set-cookie'] as unknown as string[])[0].split(';')[0];
         const token = start.body.guestToken as string;
 
         const lefts = [];
-        for (const q of ['One?', 'Two?', 'Three?']) {
-            const events = parseSse(raw(await askGuest(token, q).expect(200)));
+        for (const q of ['One?', 'Two?']) {
+            const events = parseSse(raw(await askGuest(token, q, ip).expect(200)));
             lefts.push(events.at(-1)?.data.questionsLeft);
         }
-        expect(lefts).toEqual([2, 1, 0]);
-        const blocked = await h
-            .http()
-            .post('/v1/guest/messages')
-            .set('X-Guest-Token', token)
-            .send({ text: 'Four?' })
-            .expect(429);
-        expect(blocked.body.code).toBe('guest_limit_reached');
+        expect(lefts).toEqual([1, 0]);
+        const blocked = await askGuest(token, 'Three?', ip).expect(429);
+        expect(JSON.parse(raw(blocked)).code).toBe('guest_limit_reached');
 
-        const again = await h.http().post('/v1/guest/sessions').set('Cookie', cookie).expect(201);
+        const again = await startGuest(nextIp(), { cookie }).expect(201);
         expect(again.body.questionsLeft).toBe(0);
-        await h
-            .http()
-            .post('/v1/guest/messages')
-            .set('X-Guest-Token', again.body.guestToken)
-            .send({ text: 'Five?' })
-            .expect(429);
+        await askGuest(again.body.guestToken, 'Four?', nextIp()).expect(429);
 
         const a = await signIn(h);
         const claimed = await h
@@ -504,8 +505,6 @@ describe('guest Ask', () => {
             'One?',
             'Guest answer.',
             'Two?',
-            'Guest answer.',
-            'Three?',
             'Guest answer.',
         ]);
         expect(msgs.body.items.every((m: { charged: number }) => m.charged === 0)).toBe(true);
@@ -536,15 +535,44 @@ describe('guest Ask', () => {
         ).toBe(10);
     });
 
+    it('counts the same browser fingerprint across new cookies and IPs', async () => {
+        h.ai.respond = () => 'Guest answer.';
+        const first = await startGuest(nextIp(), { visitorId: 'fp_same_browser_1' }).expect(201);
+        await askGuest(first.body.guestToken, 'One?').expect(200);
+        await askGuest(first.body.guestToken, 'Two?').expect(200);
+
+        const second = await startGuest(nextIp(), { visitorId: 'fp_same_browser_1' }).expect(201);
+        expect(second.body.questionsLeft).toBe(0);
+        await askGuest(second.body.guestToken, 'Three?').expect(429);
+
+        const other = await startGuest(nextIp(), { visitorId: 'fp_other_browser' }).expect(201);
+        expect(other.body.questionsLeft).toBe(2);
+    });
+
+    it('allows 2 free questions per IP address a day, whatever the device', async () => {
+        h.ai.respond = () => 'Guest answer.';
+        const ip = nextIp();
+        const a = await startGuest(ip, { visitorId: 'fp_ip_test_a' }).expect(201);
+        await askGuest(a.body.guestToken, 'One?', ip).expect(200);
+        const b = await startGuest(ip, { visitorId: 'fp_ip_test_b' }).expect(201);
+        expect(b.body.questionsLeft).toBe(1);
+        await askGuest(b.body.guestToken, 'Two?', ip).expect(200);
+
+        const c = await startGuest(ip, { visitorId: 'fp_ip_test_c' }).expect(201);
+        expect(c.body.questionsLeft).toBe(0);
+        const blocked = await askGuest(c.body.guestToken, 'Three?', ip).expect(429);
+        expect(JSON.parse(raw(blocked)).code).toBe('guest_limit_reached');
+    });
+
     it('gives the question back when the answer fails', async () => {
         h.ai.respond = () => {
             throw new Error('down');
         };
-        const start = await h.http().post('/v1/guest/sessions').expect(201);
+        const start = await startGuest(nextIp()).expect(201);
         const events = parseSse(raw(await askGuest(start.body.guestToken, 'Hello?').expect(200)));
         expect(events.at(-1)).toMatchObject({
             event: 'error',
-            data: { refunded: true, questionsLeft: 3 },
+            data: { refunded: true, questionsLeft: 2 },
         });
     });
 

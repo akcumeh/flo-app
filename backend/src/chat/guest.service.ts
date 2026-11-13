@@ -5,18 +5,18 @@ import { ASK_SYSTEM, GUEST_RULES } from '../ai/prompts.js';
 import { AppError } from '../common/app-error.js';
 import { hmac, sha256 } from '../common/crypto.js';
 import { CONFIG, type Config } from '../config.js';
-import { DB, type Db } from '../db/db.js';
+import { DB, type Db, type Queryable } from '../db/db.js';
 import type { SseWriter } from './sse.js';
 
-export const GUEST_LIMIT = 3;
+export const GUEST_LIMIT = 2;
 const GUEST_TTL_DAYS = 7;
 const SESSIONS_PER_IP_PER_DAY = 10;
-const QUESTIONS_PER_IP_PER_DAY = 15;
 
 interface GuestRow {
     token_hash: string;
     device_hash: string;
     ip_hash: string;
+    visitor_hash: string | null;
     claimed_by: string | null;
     claimed_conversation_id: string | null;
     expired: boolean;
@@ -36,17 +36,31 @@ export class GuestService {
         return hmac(this.config.codePepper, `${kind}:${value}`);
     }
 
-    private async usedOnDevice(deviceHash: string): Promise<number> {
-        const [{ used }] = await this.db.query<{ used: number }>(
-            'select coalesce(sum(questions_used), 0)::int as used from guest_sessions where device_hash = $1',
-            [deviceHash]
+    private async used(
+        q: Queryable,
+        deviceHash: string,
+        visitorHash: string | null,
+        ipHash: string
+    ): Promise<number> {
+        const [{ mine, ip }] = await q.query<{ mine: number; ip: number }>(
+            `select
+                coalesce(sum(questions_used) filter (
+                    where device_hash = $1 or ($2::text is not null and visitor_hash = $2)
+                ), 0)::int as mine,
+                coalesce(sum(questions_used) filter (
+                    where ip_hash = $3 and created_at > now() - interval '1 day'
+                ), 0)::int as ip
+             from guest_sessions
+            where device_hash = $1 or ($2::text is not null and visitor_hash = $2) or ip_hash = $3`,
+            [deviceHash, visitorHash, ipHash]
         );
-        return used;
+        return Math.max(mine, ip);
     }
 
-    async create(deviceId: string, ip: string) {
+    async create(deviceId: string, ip: string, visitorId?: string) {
         const deviceHash = this.hash('device', deviceId);
         const ipHash = this.hash('ip', ip);
+        const visitorHash = visitorId ? this.hash('visitor', visitorId) : null;
         const [{ n }] = await this.db.query<{ n: number }>(
             `select count(*)::int as n from guest_sessions where ip_hash = $1 and created_at > now() - interval '1 day'`,
             [ipHash]
@@ -55,14 +69,17 @@ export class GuestService {
 
         const token = `gst_${randomBytes(24).toString('base64url')}`;
         const [row] = await this.db.query<{ expires_at: Date }>(
-            `insert into guest_sessions (token_hash, device_hash, ip_hash, expires_at)
-       values ($1, $2, $3, now() + make_interval(days => $4)) returning expires_at`,
-            [sha256(token), deviceHash, ipHash, GUEST_TTL_DAYS]
+            `insert into guest_sessions (token_hash, device_hash, ip_hash, visitor_hash, expires_at)
+       values ($1, $2, $3, $4, now() + make_interval(days => $5)) returning expires_at`,
+            [sha256(token), deviceHash, ipHash, visitorHash, GUEST_TTL_DAYS]
         );
         return {
             guestToken: token,
             expiresAt: new Date(row.expires_at).toISOString(),
-            questionsLeft: Math.max(0, GUEST_LIMIT - (await this.usedOnDevice(deviceHash))),
+            questionsLeft: Math.max(
+                0,
+                GUEST_LIMIT - (await this.used(this.db, deviceHash, visitorHash, ipHash))
+            ),
         };
     }
 
@@ -70,7 +87,7 @@ export class GuestService {
         if (!token)
             throw AppError.unauthorized('invalid_guest_token', 'Start a guest session first.');
         const [row] = await this.db.query<GuestRow>(
-            `select token_hash, device_hash, ip_hash, claimed_by, claimed_conversation_id, expires_at <= now() as expired
+            `select token_hash, device_hash, ip_hash, visitor_hash, claimed_by, claimed_conversation_id, expires_at <= now() as expired
          from guest_sessions where token_hash = $1`,
             [sha256(token)]
         );
@@ -89,21 +106,14 @@ export class GuestService {
                 'invalid_guest_token',
                 'This chat was saved to an account. Sign in to continue.'
             );
-        const [{ ipQuestions }] = await this.db.query<{ ipQuestions: number }>(
-            `select coalesce(sum(questions_used), 0)::int as "ipQuestions" from guest_sessions
-        where ip_hash = $1 and created_at > now() - interval '1 day'`,
-            [g.ip_hash]
-        );
-        if (ipQuestions >= QUESTIONS_PER_IP_PER_DAY) throw AppError.rateLimited(3600);
-
         const reserved = await this.db.transaction(async (q) => {
-            await q.query('select 1 from guest_sessions where device_hash = $1 for update', [
-                g.device_hash,
-            ]);
-            const [{ used }] = await q.query<{ used: number }>(
-                'select coalesce(sum(questions_used), 0)::int as used from guest_sessions where device_hash = $1',
-                [g.device_hash]
+            await q.query(
+                `select 1 from guest_sessions
+                  where device_hash = $1 or ($2::text is not null and visitor_hash = $2) or ip_hash = $3
+                  for update`,
+                [g.device_hash, g.visitor_hash, g.ip_hash]
             );
+            const used = await this.used(q, g.device_hash, g.visitor_hash, g.ip_hash);
             if (used >= GUEST_LIMIT) return null;
             await q.query(
                 'update guest_sessions set questions_used = questions_used + 1 where token_hash = $1',

@@ -1255,8 +1255,10 @@ export interface paths {
         put?: never;
         /**
          * Start a guest session from the website
-         * @description Screen A02. Returns a guest token and the number of free questions left. The limit is 3
-         *     per device, also rate-limited by IP. No file uploads.
+         * @description Screen A02. Returns a guest token and the number of free questions left. A guest gets 2
+         *     free questions, counted three ways at once: per device cookie, per browser fingerprint
+         *     (`visitorId`) and per IP address over 24 hours. Whichever is used up first wins. No file
+         *     uploads.
          */
         post: operations["createGuestSession"];
         delete?: never;
@@ -1276,8 +1278,8 @@ export interface paths {
         put?: never;
         /**
          * Ask a question as a guest and stream the answer
-         * @description Same event stream as `sendMessage`. After the third answer, `message.end` carries
-         *     `questionsLeft: 0` and the client shows the save prompt (A03). A fourth question answers
+         * @description Same event stream as `sendMessage`. After the second answer, `message.end` carries
+         *     `questionsLeft: 0` and the client shows the save prompt (A03). A third question answers
          *     429 `guest_limit_reached`. Guests are never charged tokens.
          */
         post: operations["sendGuestMessage"];
@@ -4511,7 +4513,14 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description Browser fingerprint from the client. Stored only as a keyed hash. */
+                    visitorId?: string;
+                };
+            };
+        };
         responses: {
             /** @description Guest session. */
             201: {

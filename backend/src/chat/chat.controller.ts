@@ -115,7 +115,11 @@ export class GuestController {
 
     @Post('sessions')
     @HttpCode(201)
-    create(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    create(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+        @Body() body: { visitorId?: string } | undefined
+    ) {
         let device = (req.cookies as Record<string, string> | undefined)?.[DEVICE_COOKIE];
         if (!device || !/^[A-Za-z0-9_-]{32}$/.test(device)) {
             device = randomBytes(24).toString('base64url');
@@ -127,7 +131,7 @@ export class GuestController {
                 maxAge: 365 * 24 * 60 * 60 * 1000,
             });
         }
-        return this.guests.create(device, req.ip ?? 'unknown');
+        return this.guests.create(device, req.ip ?? 'unknown', body?.visitorId);
     }
 
     @Post('messages')
