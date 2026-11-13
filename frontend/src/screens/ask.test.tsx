@@ -9,6 +9,10 @@ import { AccountProvider } from '../state/AccountContext';
 import { makeQueryClient } from '../state/query';
 import { installFakeBackend, json, problem, sse } from '../test/fakeBackend';
 
+vi.mock('@fingerprintjs/fingerprintjs', () => ({
+    load: async () => ({ get: async () => ({ visitorId: 'fp-test-visitor-1' }) }),
+}));
+
 function renderAt(path: string) {
     return render(
         <QueryClientProvider client={makeQueryClient()}>
@@ -66,6 +70,9 @@ describe('Guest Ask', () => {
                 'General answer. Add your notes to get answers from your own course material.'
             )
         ).toBeInTheDocument();
+        expect(fake.calls.find((c) => c.path === '/v1/guest/sessions')?.body).toEqual({
+            visitorId: 'fp-test-visitor-1',
+        });
         const send = fake.calls.find((c) => c.path === '/v1/guest/messages');
         expect(send?.headers.get('X-Guest-Token')).toBe('g-1');
         expect(send?.auth).toBeNull();

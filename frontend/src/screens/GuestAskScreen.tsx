@@ -111,7 +111,7 @@ export function GuestAskScreen() {
                     <section className={s.hello}>
                         <h1 className={s.title}>What do you want to understand?</h1>
                         <p className={s.lead}>
-                            Ask Florence anything about your course. Three questions are free, no
+                            Ask Florence anything about your course. Two questions are free, no
                             account needed.
                         </p>
                     </section>

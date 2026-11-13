@@ -82,11 +82,33 @@ function writeGuest(g: StoredGuest | null) {
     }
 }
 
+let visitorPromise: Promise<string | null> | null = null;
+
+export function visitorId(): Promise<string | null> {
+    visitorPromise ??= (async () => {
+        try {
+            const { load } = await import('@fingerprintjs/fingerprintjs');
+            const agent = await load();
+            const result = await Promise.race([
+                agent.get(),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+            ]);
+            return result?.visitorId ?? null;
+        } catch {
+            return null;
+        }
+    })();
+    return visitorPromise;
+}
+
 export async function startGuest(): Promise<{ token: string; questionsLeft: number }> {
     const existing = readGuest();
+    const id = await visitorId();
     const res = await fetch(`${API_URL}/v1/guest/sessions`, {
         method: 'POST',
         credentials: 'include',
+        headers: id ? { 'Content-Type': 'application/json' } : undefined,
+        body: id ? JSON.stringify({ visitorId: id }) : undefined,
     }).catch(() => {
         throw new ApiError(0, null, 'You seem to be offline.');
     });
