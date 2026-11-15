@@ -14,9 +14,10 @@ import { App } from './App';
 import { ToastProvider } from './components/ui';
 import { AccountProvider } from './state/AccountContext';
 import { makeQueryClient } from './state/query';
-import { applyAppearance } from './state/theme';
+import { applyAppearance, followSystemTheme } from './state/theme';
 
 applyAppearance();
+followSystemTheme();
 const queryClient = makeQueryClient();
 
 createRoot(document.getElementById('root')!).render(

@@ -24,6 +24,22 @@ export function applyAppearance(value: Appearance = read()) {
     document
         .querySelector('meta[name="theme-color"]')
         ?.setAttribute('content', dark ? '#0a0a0a' : '#fafafa');
+    const tone = dark ? 'dark' : 'light';
+    const icons: Array<[string, string]> = [
+        ['link[rel="apple-touch-icon"]', `/apple-touch-icon-${tone}.png`],
+        ['link[rel="icon"][sizes="32x32"]', `/favicon-32x32-${tone}.png`],
+        ['link[rel="icon"][sizes="16x16"]', `/favicon-16x16-${tone}.png`],
+    ];
+    for (const [selector, href] of icons) {
+        document.querySelector(selector)?.setAttribute('href', href);
+    }
+}
+
+export function followSystemTheme() {
+    const query = window.matchMedia?.('(prefers-color-scheme: dark)');
+    query?.addEventListener('change', () => {
+        if (read() === 'system') applyAppearance('system');
+    });
 }
 
 export function setAppearance(value: Appearance) {
