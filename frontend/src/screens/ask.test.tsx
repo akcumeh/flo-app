@@ -82,7 +82,7 @@ describe('Guest Ask', () => {
         expect(screen.getByRole('button', { name: 'Continue with phone number' })).toBeEnabled();
     });
 
-    it('shows the save prompt when the device has used its free questions', async () => {
+    it('says plainly when the free questions are used up', async () => {
         const fake = installFakeBackend({ signedIn: false });
         fake.on('POST', '/v1/guest/sessions', () =>
             json({ guestToken: 'g-2', expiresAt: '2099-01-01T00:00:00Z', questionsLeft: 3 }, 201)
@@ -96,8 +96,8 @@ describe('Guest Ask', () => {
         await screen.findByRole('heading', { name: 'What do you want to understand?' });
         await user.type(screen.getByLabelText('Message'), 'What is osmosis?');
         await user.click(screen.getByRole('button', { name: 'Send' }));
-        await screen.findByRole('dialog', { name: 'Save this and keep going?' });
-        await user.click(screen.getByRole('button', { name: 'Continue with phone number' }));
+        await screen.findByText(/used up your 2 free questions/);
+        await user.click(screen.getByRole('button', { name: 'Create a free account' }));
         await screen.findByRole('heading', { name: 'Save your progress' });
     });
 

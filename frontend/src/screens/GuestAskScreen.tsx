@@ -4,6 +4,7 @@ import { ApiError } from '../api';
 import { sendGuestMessage, startGuest } from '../api/chat';
 import { AnswerCard, Composer, SavePrompt, UserBubble } from '../components/ask/Ask';
 import { Icon } from '../components/Icon';
+import { Button } from '../components/ui';
 import s from './GuestAsk.module.scss';
 
 interface Turn {
@@ -12,7 +13,20 @@ interface Turn {
     answer: string;
     streaming: boolean;
     error: string | null;
+    usedUp?: boolean;
 }
+
+const USED_UP =
+    "Sorry, it looks like you've used up your 2 free questions. Create a free account to get more free questions.";
+
+const usedUp = (key: string, question: string): Turn => ({
+    key,
+    question,
+    answer: '',
+    streaming: false,
+    error: USED_UP,
+    usedUp: true,
+});
 
 export function GuestAskScreen() {
     const navigate = useNavigate();
@@ -33,12 +47,12 @@ export function GuestAskScreen() {
     const send = useCallback(async (question: string) => {
         const text = question.trim();
         if (!text || busy.current) return;
+        const key = `${Date.now()}-${Math.random()}`;
         if (left.current === 0) {
-            setPrompt(true);
+            setTurns((prev) => [...prev, usedUp(key, text)]);
             return;
         }
         busy.current = true;
-        const key = `${Date.now()}-${Math.random()}`;
         setTurns((prev) => [
             ...prev,
             { key, question: text, answer: '', streaming: true, error: null },
@@ -48,6 +62,10 @@ export function GuestAskScreen() {
                 const g = await startGuest();
                 token.current = g.token;
                 left.current = g.questionsLeft;
+            }
+            if (left.current === 0) {
+                patch(key, () => usedUp(key, text));
+                return;
             }
             for await (const e of sendGuestMessage(token.current, text)) {
                 if (e.type === 'delta') patch(key, (t) => ({ answer: t.answer + e.text }));
@@ -67,8 +85,7 @@ export function GuestAskScreen() {
         } catch (err) {
             if (err instanceof ApiError && err.code === 'guest_limit_reached') {
                 left.current = 0;
-                setTurns((prev) => prev.filter((t) => t.key !== key));
-                setPrompt(true);
+                patch(key, () => usedUp(key, text));
             } else {
                 patch(key, () => ({
                     streaming: false,
@@ -128,6 +145,11 @@ export function GuestAskScreen() {
                             onPractise={() => setPrompt(true)}
                             onSave={() => setPrompt(true)}
                         />
+                        {t.usedUp ? (
+                            <Button block onClick={signUp}>
+                                Create a free account
+                            </Button>
+                        ) : null}
                     </div>
                 ))}
                 <div ref={endRef} />
