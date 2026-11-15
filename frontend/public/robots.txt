@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /ask
+Allow: /signin
+Disallow: /home
+Disallow: /library
+Disallow: /prep
+Disallow: /progress
+Disallow: /profile
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /ask/
+Disallow: /v1/
+Disallow: /internal/
+Disallow: /storage/
+
+Sitemap: https://app.myflorence.site/sitemap.xml
