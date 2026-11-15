@@ -6,6 +6,7 @@ import { AppearanceScreen } from './screens/AppearanceScreen';
 import { MaterialScreen } from './screens/MaterialScreen';
 import { AskScreen } from './screens/AskScreen';
 import { ChatHistoryScreen, SavedAnswersScreen } from './screens/AskListsScreens';
+import { GoogleReturnScreen } from './screens/GoogleReturnScreen';
 import { GuestAskScreen } from './screens/GuestAskScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
@@ -87,6 +88,7 @@ export function App() {
                     <Route path="/progress" element={<ProgressScreen />} />
                 </Route>
             </Route>
+            <Route path="/signin/google" element={<GoogleReturnScreen />} />
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>

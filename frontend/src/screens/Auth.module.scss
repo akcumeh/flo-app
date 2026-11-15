@@ -63,12 +63,6 @@
     }
 }
 
-.google {
-    display: flex;
-    justify-content: center;
-    min-height: 44px;
-}
-
 .linkButton {
     @include type.button;
     display: flex;

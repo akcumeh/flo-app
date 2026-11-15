@@ -54,6 +54,7 @@ export type IconName =
     | 'file-text'
     | 'file-text-small'
     | 'fire'
+    | 'google'
     | 'flag'
     | 'flag-row'
     | 'help'

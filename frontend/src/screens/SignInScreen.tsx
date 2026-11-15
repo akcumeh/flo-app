@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ApiError, client, type AuthSession } from '../api';
+import { ApiError, client } from '../api';
 import { Icon } from '../components/Icon';
 import { Button, Field } from '../components/ui';
-import { GOOGLE_CLIENT_ID, loadGoogle } from '../lib/google';
-import { useAccount } from '../state/AccountContext';
+import { GOOGLE_CLIENT_ID, googleSignInUrl } from '../lib/google';
 import s from './Auth.module.scss';
 
 export function AuthIntro() {
@@ -20,50 +19,21 @@ export function AuthIntro() {
     );
 }
 
-function GoogleButton({ from, onError }: { from: string; onError: (message: string) => void }) {
-    const ref = useRef<HTMLDivElement>(null);
-    const navigate = useNavigate();
-    const { signedIn } = useAccount();
-
-    useEffect(() => {
-        if (!GOOGLE_CLIENT_ID || !ref.current) return;
-        let live = true;
-        loadGoogle()
-            .then((g) => {
-                if (!live || !ref.current) return;
-                g.initialize({
-                    client_id: GOOGLE_CLIENT_ID,
-                    ux_mode: 'popup',
-                    callback: async ({ credential }) => {
-                        try {
-                            const { data } = await client.POST('/v1/auth/google', {
-                                body: { idToken: credential },
-                            });
-                            signedIn(data as AuthSession);
-                            navigate(from, { replace: true });
-                        } catch (err) {
-                            onError(err instanceof Error ? err.message : 'Google sign-in failed.');
-                        }
-                    },
-                });
-                g.renderButton(ref.current, {
-                    type: 'standard',
-                    theme: 'outline',
-                    size: 'large',
-                    shape: 'pill',
-                    text: 'continue_with',
-                    logo_alignment: 'center',
-                    width: Math.min(ref.current.offsetWidth || 360, 400),
-                });
-            })
-            .catch(() => undefined);
-        return () => {
-            live = false;
-        };
-    }, [from, navigate, onError, signedIn]);
-
+function GoogleButton({ from }: { from: string }) {
     if (!GOOGLE_CLIENT_ID) return null;
-    return <div ref={ref} className={s.google} aria-label="Continue with Google" />;
+    return (
+        <Button
+            variant="secondary"
+            block
+            onClick={() => {
+                const url = googleSignInUrl(from);
+                if (url) window.location.assign(url);
+            }}
+        >
+            <Icon name="google" />
+            Continue with Google
+        </Button>
+    );
 }
 
 function TelegramButton({ from, onError }: { from: string; onError: (message: string) => void }) {
@@ -157,7 +127,7 @@ export function SignInScreen() {
                         Send code
                     </Button>
                     <p className={s.or}>or</p>
-                    <GoogleButton from={from} onError={setError} />
+                    <GoogleButton from={from} />
                     <TelegramButton from={from} onError={setError} />
                 </form>
                 <p className={s.terms}>
