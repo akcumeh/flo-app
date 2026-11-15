@@ -45,6 +45,23 @@ function textOf(message: Anthropic.Beta.BetaMessage): string {
         .join('');
 }
 
+export function withTailCache(messages: AiMessage[]): Anthropic.Beta.BetaMessageParam[] {
+    if (messages.length === 0) return messages;
+    const out = messages.slice(0, -1) as Anthropic.Beta.BetaMessageParam[];
+    const last = messages[messages.length - 1];
+    const blocks: Anthropic.Beta.BetaContentBlockParam[] =
+        typeof last.content === 'string'
+            ? [{ type: 'text', text: last.content }]
+            : [...last.content];
+    const end = blocks.length - 1;
+    blocks[end] = {
+        ...blocks[end],
+        cache_control: { type: 'ephemeral' },
+    } as (typeof blocks)[number];
+    out.push({ role: last.role, content: blocks });
+    return out;
+}
+
 export class AnthropicProvider implements AiProvider {
     readonly live = true;
     private readonly client: Anthropic;
@@ -62,8 +79,18 @@ export class AnthropicProvider implements AiProvider {
             max_tokens: req.maxTokens ?? 16000,
             betas: ['server-side-fallback-2026-07-01'],
             fallbacks: 'default',
-            ...(req.system ? { system: req.system } : {}),
-            messages: req.messages,
+            ...(req.system
+                ? {
+                      system: [
+                          {
+                              type: 'text' as const,
+                              text: req.system,
+                              cache_control: { type: 'ephemeral' as const },
+                          },
+                      ],
+                  }
+                : {}),
+            messages: withTailCache(req.messages),
             output_config: {
                 effort: req.effort ?? 'medium',
                 ...(req.jsonSchema

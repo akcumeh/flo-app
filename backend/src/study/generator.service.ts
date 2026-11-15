@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { randomInt } from 'node:crypto';
 import { AI_PROVIDER, parseJson, type AiProvider } from '../ai/ai.provider.js';
 import { AppError } from '../common/app-error.js';
 import type { Queryable } from '../db/db.js';
@@ -146,6 +147,14 @@ export interface GeneratedItem {
 const MATERIAL_CHARS = 120_000;
 export const MIN_MATERIAL_CHARS = 150;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function shuffle<T>(items: T[]): T[] {
+    const out = [...items];
+    for (let i = out.length - 1; i > 0; i -= 1) {
+        const j = randomInt(i + 1);
+        [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+}
 
 export const normalise = (s: string) =>
     s
@@ -254,7 +263,7 @@ export class GeneratorService {
                     role: 'user',
                     content: `Files:\n${fileList}\n\nNotes:\n${material.text}\n\nWrite exactly ${count} study items for ${mode.replace('_', ' ')} mode. ${MODE_BRIEF[mode]}
 Allowed types: ${MODE_TYPES[mode].join(', ')}.
-For mcq give 4 options and set "answer" to the full text of the correct option; give a reason for each wrong option in "wrongOptionReasons". For true_false set options to ["True", "False"].
+For mcq give 4 options and set "answer" to the full text of the correct option; give a reason for each wrong option in "wrongOptionReasons". Make every wrong option a real term or value from this subject that a student who half-knows the topic could pick: a common misconception, a related concept, or a near-miss number. Keep all 4 options the same kind of thing, the same grammar and about the same length, and never make the correct one the longest or most detailed. No made-up words, joke options, "all of the above" or "none of the above". For true_false set options to ["True", "False"].
 For short, theory and calculation give a model answer in "answer". Use empty arrays and empty strings for fields that do not apply.
 Set "marks" to 1 for mcq, true_false, fill_gap and flashcard, and 2 to 10 for written answers.
 ${focus ? `Focus on: ${focus}\n` : ''}Spread the items across the material and vary the difficulty.`,
@@ -289,6 +298,7 @@ ${focus ? `Focus on: ${focus}\n` : ''}Spread the items across the material and v
                     .filter(Boolean);
                 const match = options.find((o) => normalise(o) === normalise(answer));
                 if (options.length < 3 || !match) continue;
+                options = shuffle(options);
                 key = match;
             }
             if (type === 'true_false') {

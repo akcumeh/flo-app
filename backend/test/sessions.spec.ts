@@ -87,8 +87,8 @@ describe('study sessions', () => {
             'theory',
         ]);
         expect(JSON.stringify(s.items)).not.toContain('"answer"');
+        expect([...s.items[0].options].sort()).toEqual(['ATP', 'Glucose', 'Light', 'Water']);
         expect(s.items[0]).toMatchObject({
-            options: ['ATP', 'Light', 'Water', 'Glucose'],
             state: 'unanswered',
             sourceLabel: expect.stringContaining('p. 1'),
         });
@@ -157,7 +157,7 @@ describe('study sessions', () => {
         const wrong = await answer(
             a.body.accessToken,
             s.id,
-            { itemId: 0, answer: 'B' },
+            { itemId: 0, answer: 'Light' },
             key
         ).expect(200);
         expect(wrong.body).toMatchObject({
