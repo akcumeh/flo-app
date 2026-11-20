@@ -26,4 +26,4 @@ COPY backend/db ./db
 COPY --from=web /repo/frontend/dist ./web
 USER node
 EXPOSE 3000
-CMD ["node", "dist/src/main.js"]
+CMD ["sh", "-c", "node dist/src/db/migrate-cli.js && node dist/src/main.js"]
