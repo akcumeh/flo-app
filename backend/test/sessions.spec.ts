@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { makePdf } from './fixtures.js';
+import { fakePng, makePdf } from './fixtures.js';
 import { STUDY_NOTES, studyResponder } from './study-fake.js';
 import { Harness, bearer, signIn, startHarness } from './helpers.js';
 
@@ -453,5 +453,39 @@ describe('study sessions', () => {
             .set(bearer(b.body.accessToken))
             .send({ mode: 'quiz', fileIds: [fileId] })
             .expect(404);
+    });
+
+    it('drops gapped prompts from quiz mode', async () => {
+        const base = studyResponder({ quizTypes: ['mcq', 'true_false'] });
+        h.ai.respond = (req) => {
+            const out = base(req);
+            if (!('items' in ((req.jsonSchema?.properties ?? {}) as object))) return out;
+            const parsed = JSON.parse(out) as { items: Array<{ prompt: string }> };
+            parsed.items[0].prompt = 'The sodium-potassium pump uses ____ to move ions.';
+            return JSON.stringify(parsed);
+        };
+        const a = await signIn(h);
+        const s = await start(a.body.accessToken, { questionCount: 4 });
+        expect(s.items.length).toBeGreaterThanOrEqual(2);
+        expect(s.items.some((i: { prompt: string }) => i.prompt.includes('____'))).toBe(false);
+    });
+
+    it('refuses to make questions from photos of notes', async () => {
+        const a = await signIn(h);
+        const up = await h
+            .http()
+            .post('/v1/files')
+            .set(bearer(a.body.accessToken))
+            .attach('pages', fakePng(5), { filename: 'page.png', contentType: 'image/png' })
+            .expect(201);
+        await h.drain();
+        const res = await h
+            .http()
+            .post('/v1/sessions')
+            .set(bearer(a.body.accessToken))
+            .send({ mode: 'quiz', fileIds: [up.body.id], questionCount: 3 })
+            .expect(422);
+        expect(res.body.code).toBe('mode_not_possible');
+        expect(await balance(a.body.accessToken)).toBe(10);
     });
 });

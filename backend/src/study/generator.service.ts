@@ -17,9 +17,9 @@ const MODE_TYPES: Record<StudyMode, ItemType[]> = {
 };
 
 const MODE_BRIEF: Record<StudyMode, string> = {
-    quiz: 'Mix types to suit the material: mostly mcq with 4 options, some true_false, and a few short, theory or calculation questions where the notes support them. Calculation questions only where the notes contain numbers or formulas.',
+    quiz: 'Mix types to suit the material: mostly mcq with 4 options, some true_false, and a few short, theory or calculation questions where the notes support them. Calculation questions only where the notes contain numbers or formulas. Never write a fill-in-the-blank or gapped sentence: every prompt is a complete question.',
     mock_exam:
-        'Write them like a Nigerian university exam paper: mcq with 4 options, short answers, theory questions worth 5 to 10 marks, and calculations where the notes support them.',
+        'Write them like a Nigerian university exam paper: mcq with 4 options, short answers, theory questions worth 5 to 10 marks, and calculations where the notes support them. Never write a fill-in-the-blank or gapped sentence: every prompt is a complete question.',
     flashcards:
         'Every item is a flashcard: "prompt" is the front (a term, question or cue) and "answer" is the back, at most two sentences.',
     fill_blank:
@@ -187,6 +187,12 @@ export class GeneratorService {
             [ids, accountId]
         );
         if (files.length !== ids.length) throw AppError.notFound('No such file.');
+        if (files.some((f) => f.kind === 'image')) {
+            throw AppError.unprocessable(
+                'mode_not_possible',
+                'Photos of notes cannot be turned into questions yet. Upload a PDF instead.'
+            );
+        }
         if (files.some((f) => f.status !== 'ready')) {
             throw AppError.conflict(
                 'not_enough_material',
@@ -308,6 +314,7 @@ ${focus ? `Focus on: ${focus}\n` : ''}Spread the items across the material and v
                 key = t === 'true' ? 'True' : 'False';
             }
             if (type === 'fill_gap' && !prompt.includes('____')) continue;
+            if (type !== 'fill_gap' && /_{3,}|\.{4,}/.test(prompt)) continue;
 
             const file =
                 material.files.find((f) => f.ref === Number(r.fileRef)) ?? material.files[0];
