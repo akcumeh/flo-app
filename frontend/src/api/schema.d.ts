@@ -507,7 +507,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Conversation history, newest first */
+        /**
+         * Conversation history, newest first
+         * @description Ordered by the last message. Conversations with no messages are left out. An untitled
+         *     conversation takes its title from the first question.
+         */
         get: operations["listConversations"];
         put?: never;
         /** Start an empty conversation */
@@ -4321,7 +4325,8 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
-                limit?: components["parameters"]["Limit"];
+                /** @description Up to 300, so onboarding can show the whole list in one scroll. */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -4751,6 +4756,12 @@ export interface operations {
                         message?: string | null;
                         minClientVersion: string;
                         latestClientVersion: string;
+                        /** @description Where Contact support (F15) sends people. Null when not set. */
+                        support?: {
+                            /** @description Digits only, for a wa.me link. */
+                            whatsapp: string | null;
+                            email: string | null;
+                        };
                     };
                 };
             };

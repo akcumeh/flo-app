@@ -22,7 +22,8 @@ export class SchoolsController {
 
     @Get()
     async search(@Query('q') q?: string, @Query('limit') limit?: string) {
-        return { items: await this.profiles.searchSchools(q, Number(limit ?? 25)) };
+        const n = Math.min(300, Math.max(1, Math.floor(Number(limit ?? 25)) || 25));
+        return { items: await this.profiles.searchSchools(q, n) };
     }
 
     @Get(':schoolId/departments')

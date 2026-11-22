@@ -1,8 +1,11 @@
-import { All, Controller, Get } from '@nestjs/common';
+import { All, Controller, Get, Inject } from '@nestjs/common';
 import { AppError } from '../common/app-error.js';
+import { CONFIG, type Config } from '../config.js';
 
 @Controller()
 export class SystemController {
+    constructor(@Inject(CONFIG) private readonly config: Config) {}
+
     @Get('v1/health')
     health() {
         return { status: 'ok' };
@@ -15,6 +18,10 @@ export class SystemController {
             message: null,
             minClientVersion: '0.0.0',
             latestClientVersion: '0.0.0',
+            support: {
+                whatsapp: this.config.supportWhatsapp,
+                email: this.config.supportEmail,
+            },
         };
     }
 }

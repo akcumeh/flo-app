@@ -15,6 +15,10 @@ describe('auth, account and tokens', () => {
         await h.http().get('/v1/health').expect(200, { status: 'ok' });
         const res = await h.http().get('/v1/status').expect(200);
         expect(res.body.maintenance).toBe(false);
+        expect(res.body.support).toEqual({
+            whatsapp: expect.toBeOneOf([null, expect.stringMatching(/^[0-9]+$/)]),
+            email: expect.toBeOneOf([null, expect.any(String)]),
+        });
     });
 
     it('answers 202 for any address and sends a six digit code', async () => {

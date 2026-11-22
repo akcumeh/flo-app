@@ -14,6 +14,8 @@ export interface Config {
     internalApiSecret: string;
     telegramBotUsername: string | null;
     whatsappBusinessNumber: string | null;
+    supportWhatsapp: string | null;
+    supportEmail: string | null;
     whatsappAccessToken: string | null;
     whatsappPhoneNumberId: string | null;
     whatsappCodeTemplate: string;
@@ -79,6 +81,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         ),
         telegramBotUsername: env.TELEGRAM_BOT_USERNAME || null,
         whatsappBusinessNumber: env.WHATSAPP_BUSINESS_NUMBER?.replace(/[^0-9]/g, '') || null,
+        supportWhatsapp:
+            (env.SUPPORT_WHATSAPP || env.WHATSAPP_BUSINESS_NUMBER)?.replace(/[^0-9]/g, '') || null,
+        supportEmail: env.SUPPORT_EMAIL?.trim() || null,
         whatsappAccessToken: env.WHATSAPP_ACCESS_TOKEN || null,
         whatsappPhoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID || null,
         whatsappCodeTemplate: env.WHATSAPP_CODE_TEMPLATE || 'florence_signin_code',

@@ -960,6 +960,9 @@ paths:
       tags: [Chat]
       operationId: listConversations
       summary: Conversation history, newest first
+      description: |
+        Ordered by the last message. Conversations with no messages are left out. An untitled
+        conversation takes its title from the first question.
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -2138,7 +2141,15 @@ paths:
           schema:
             type: string
             maxLength: 80
-        - $ref: '#/components/parameters/Limit'
+        - name: limit
+          in: query
+          required: false
+          description: Up to 300, so onboarding can show the whole list in one scroll.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 300
+            default: 25
       responses:
         '200':
           description: Matching schools.
@@ -2581,6 +2592,16 @@ paths:
                     type: string
                   latestClientVersion:
                     type: string
+                  support:
+                    type: object
+                    description: Where Contact support (F15) sends people. Null when not set.
+                    required: [whatsapp, email]
+                    properties:
+                      whatsapp:
+                        type: [string, 'null']
+                        description: Digits only, for a wa.me link.
+                      email:
+                        type: [string, 'null']
         default:
           $ref: '#/components/responses/Problem'
 
