@@ -101,6 +101,35 @@
     gap: 10px;
 }
 
+.pageFill {
+    height: 100dvh;
+    min-height: 0;
+
+    .body {
+        min-height: 0;
+    }
+
+    .footer {
+        padding-top: 4px;
+    }
+}
+
+.scrollList {
+    flex: 1;
+    min-height: 0;
+    margin: 0 -16px;
+    padding: 2px 16px 12px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.more {
+    @include type.caption;
+    padding: 4px 4px 0;
+    color: var(--web-text-2);
+}
+
 .option {
     @include type.body;
     display: flex;
@@ -147,7 +176,13 @@
 
 .input {
     @include type.body;
+    display: block;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: left;
     min-height: 56px;
     padding: 0 16px;
     border: 1.5px solid var(--web-line-strong);
@@ -251,10 +286,7 @@
 }
 
 .hand {
-    font-family: 'Graduate', var(--font-body);
-    font-size: 16px;
-    transform: rotate(-2deg);
-    transform-origin: left;
+    @include type.note;
     color: var(--web-brand-text);
 }
 
@@ -323,5 +355,18 @@
         flex: 1;
         height: 1px;
         background: var(--web-line);
+    }
+}
+
+.input[type='date'] {
+    line-height: 52px;
+
+    &::-webkit-date-and-time-value {
+        margin: 0;
+        text-align: left;
+    }
+
+    &::-webkit-calendar-picker-indicator {
+        opacity: 0.6;
     }
 }

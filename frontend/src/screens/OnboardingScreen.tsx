@@ -66,7 +66,7 @@ function SchoolStep({
         queryFn: async () =>
             (
                 await client.GET('/v1/schools', {
-                    params: { query: { q: query || undefined, limit: 30 } },
+                    params: { query: { q: query || undefined, limit: 300 } },
                 })
             ).data!.items,
     });
@@ -84,7 +84,7 @@ function SchoolStep({
                     aria-label="Search universities"
                 />
             </label>
-            <div className={s.list} role="radiogroup" aria-label="Schools">
+            <div className={`${s.list} ${s.scrollList}`} role="radiogroup" aria-label="Schools">
                 {(schools.data ?? []).map((school) => (
                     <button
                         key={school.id}
@@ -536,7 +536,7 @@ export function OnboardingScreen() {
     const back = () => (step === 1 ? navigate(-1) : setStep(step - 1));
 
     return (
-        <div className={s.page}>
+        <div className={step === 1 ? `${s.page} ${s.pageFill}` : s.page}>
             <header className={s.bar}>
                 <button type="button" className={s.back} aria-label="Back" onClick={back}>
                     <Icon name="arrow-left" />

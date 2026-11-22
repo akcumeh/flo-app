@@ -33,3 +33,8 @@
     letter-spacing: 0.5px;
     text-transform: uppercase;
 }
+@mixin note {
+    font:
+        700 22px/26px 'Caveat',
+        var(--font-body);
+}
