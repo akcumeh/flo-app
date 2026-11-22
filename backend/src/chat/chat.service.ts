@@ -140,10 +140,16 @@ export class ChatService {
             last_message_at: Date | null;
             sort_at: Date;
         }>(
-            `select id, title, mode, last_message_at, coalesce(last_message_at, created_at) as sort_at from conversations
-        where account_id = $1 and deleted_at is null
-          and ($2::timestamptz is null or (coalesce(last_message_at, created_at), id) < ($2::timestamptz, $3::uuid))
-        order by coalesce(last_message_at, created_at) desc, id desc limit $4`,
+            `select c.id, c.mode, c.last_message_at, c.last_message_at as sort_at,
+          coalesce(c.title, (
+            select nullif(left(regexp_replace(m.content->>'text', '\\s+', ' ', 'g'), 60), '')
+            from messages m where m.conversation_id = c.id and m.role = 'user'
+            order by m.created_at limit 1
+          )) as title
+        from conversations c
+        where c.account_id = $1 and c.deleted_at is null and c.last_message_at is not null
+          and ($2::timestamptz is null or (c.last_message_at, c.id) < ($2::timestamptz, $3::uuid))
+        order by c.last_message_at desc, c.id desc limit $4`,
             [accountId, before?.at ?? null, before?.id ?? null, limit + 1]
         );
         const page = rows.slice(0, limit);

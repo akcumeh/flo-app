@@ -368,6 +368,24 @@ describe('Ask chat', () => {
         expect(res.body.code).toBe('voice_not_available');
     });
 
+    it('lists only chats with messages, newest activity first, titled by the first question', async () => {
+        const a = await signIn(h);
+        const t = a.body.accessToken;
+        const empty = await conversation(t);
+        const older = await conversation(t);
+        await ask(t, older, { text: 'First question' }).expect(200);
+        const untitled = await conversation(t);
+        h.ai.respond = () => {
+            throw new Error('down');
+        };
+        await ask(t, untitled, { text: 'asdfgh   qwerty' }).expect(200);
+        const items = (await h.http().get('/v1/conversations').set(bearer(t)).expect(200)).body
+            .items as Array<{ id: string; title: string | null }>;
+        expect(items.map((c) => c.id)).toEqual([untitled, older]);
+        expect(items.map((c) => c.id)).not.toContain(empty);
+        expect(items[0].title).toBe('asdfgh qwerty');
+    });
+
     it('saves and lists answers, renames and deletes conversations, and keeps accounts apart', async () => {
         const a = await signIn(h);
         const b = await signIn(h);
