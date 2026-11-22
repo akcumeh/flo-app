@@ -13,6 +13,7 @@ import {
 import { AppBar, AppBarButton } from '../components/AppBar';
 import { ActionsSheet, AnswerCard, Composer, SourceSheet, UserBubble } from '../components/ask/Ask';
 import { Dock } from '../components/Dock';
+import { isOutOfTokens, useOutOfTokens } from '../components/OutOfTokens';
 import { Icon } from '../components/Icon';
 import { Button, Dialog, Sheet, useToast } from '../components/ui';
 import { plainText } from '../lib/answer';
@@ -95,6 +96,7 @@ export function AskScreen() {
     const queryClient = useQueryClient();
     const toast = useToast();
     const { setBalance } = useAccount();
+    const outOfTokens = useOutOfTokens();
     const [turns, setTurns] = useState<Turn[]>([]);
     const [fromPrep, setFromPrep] = useState<FromPrep | null>(null);
     const [source, setSource] = useState<Citation | null>(null);
@@ -201,12 +203,13 @@ export function AskScreen() {
                 void queryClient.invalidateQueries({ queryKey: ['conversations'] });
             } catch (err) {
                 patch(key, () => ({ streaming: false, error: failure(err) }));
+                if (isOutOfTokens(err)) outOfTokens({ what: 'This question', cost: photo ? 2 : 1 });
             } finally {
                 patch(key, () => ({ streaming: false }));
                 busy.current = false;
             }
         },
-        [setBalance, navigate, location.state, queryClient, photo]
+        [setBalance, navigate, location.state, queryClient, photo, outOfTokens]
     );
 
     useEffect(() => {
@@ -256,6 +259,10 @@ export function AskScreen() {
             const session = await api.createPrepSession(ids, 10);
             navigate(`/prep/${session.id}`);
         } catch (err) {
+            if (isOutOfTokens(err)) {
+                outOfTokens({ what: 'A prep session', cost: 1 });
+                return;
+            }
             toast(err instanceof ApiError ? err.message : 'Could not start a session.');
         }
     };

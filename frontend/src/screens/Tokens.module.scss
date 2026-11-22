@@ -1,0 +1,232 @@
+@use '../styles/type';
+
+.page {
+    display: flex;
+    flex-direction: column;
+    max-width: 640px;
+    min-height: 100dvh;
+    margin: 0 auto;
+    background: var(--web-bg);
+    color: var(--web-text);
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 4px 16px 16px;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px calc(34px + env(safe-area-inset-bottom));
+}
+
+.title {
+    @include type.display-m;
+}
+
+.lead {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.caption {
+    @include type.caption;
+    color: var(--web-text-2);
+}
+
+.error {
+    @include type.caption;
+    color: var(--web-error);
+}
+
+.label {
+    @include type.label;
+    color: var(--web-text-2);
+}
+
+.balance {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px;
+    border-radius: var(--app-radius-card);
+    background: var(--web-sun-tint);
+    color: var(--web-text);
+}
+
+.balanceRow {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.balanceNum {
+    font: 800 44px/48px var(--font-display);
+    letter-spacing: -1px;
+}
+
+.balanceUnit {
+    @include type.secondary;
+    padding-bottom: 4px;
+}
+
+.balanceNote {
+    @include type.caption;
+}
+
+.group {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--web-line);
+    border-radius: var(--app-radius-card);
+    background: var(--web-surface);
+    list-style: none;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 0 16px;
+}
+
+.row + .row {
+    border-top: 1px solid var(--web-line);
+}
+
+.rowIcon {
+    color: var(--web-text);
+}
+
+.rowText {
+    @include type.body;
+    flex: 1;
+    min-width: 0;
+}
+
+.rowValue {
+    @include type.secondary;
+    flex-shrink: 0;
+    color: var(--web-text-2);
+    text-align: right;
+}
+
+.plans {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.plan {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 84px;
+    padding: 16px 20px;
+    border: 1.5px solid var(--web-line);
+    border-radius: var(--app-radius-card);
+    background: var(--web-surface);
+    color: var(--web-text);
+    text-align: left;
+
+    &:focus-visible {
+        outline: 2px solid var(--web-brand);
+        outline-offset: 2px;
+    }
+}
+
+.planOn {
+    border: 2px solid var(--web-brand);
+    background: var(--web-blue-tint);
+
+    .radio {
+        border: 6px solid var(--web-brand);
+        background: var(--web-white);
+    }
+}
+
+.radio {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid var(--web-line-strong);
+    border-radius: var(--app-radius-pill);
+}
+
+.planText {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.planName {
+    @include type.body-strong;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.planBadge {
+    @include type.caption;
+    padding: 2px 8px;
+    border-radius: var(--app-radius-pill);
+    background: var(--web-sun-tint);
+    color: var(--web-tan-text);
+}
+
+.planSub {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.planPrice {
+    @include type.body-strong;
+    flex-shrink: 0;
+}
+
+.stateIcon {
+    display: inline-flex;
+
+    svg {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+.stateOk {
+    color: var(--web-success);
+}
+
+.stateBad {
+    color: var(--web-warning);
+}
+
+.preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    border-radius: var(--app-radius-input);
+    background: var(--web-surface-2);
+}
+
+.previewText {
+    @include type.secondary;
+    white-space: pre-wrap;
+}

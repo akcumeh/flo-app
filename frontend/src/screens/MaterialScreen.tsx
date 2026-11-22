@@ -1,3 +1,4 @@
+import { isOutOfTokens, useOutOfTokens } from '../components/OutOfTokens';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -31,6 +32,7 @@ function Reading() {
 }
 
 export function MaterialScreen() {
+    const outOfTokens = useOutOfTokens();
     const { id = '' } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
@@ -70,7 +72,8 @@ export function MaterialScreen() {
             const session = await api.createPrepSession([id], 10);
             navigate(`/prep/${session.id}`);
         } catch (err) {
-            setError(err instanceof ApiError ? err.message : 'Could not start a session.');
+            if (isOutOfTokens(err)) outOfTokens({ what: 'A prep session', cost: 1 });
+            else setError(err instanceof ApiError ? err.message : 'Could not start a session.');
         } finally {
             setStarting(false);
         }

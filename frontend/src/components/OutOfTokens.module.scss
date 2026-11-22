@@ -1,0 +1,13 @@
+@use '../styles/type';
+
+.body {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+}

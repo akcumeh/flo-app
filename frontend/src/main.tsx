@@ -8,9 +8,10 @@ import '@fontsource/figtree/700.css';
 import '@fontsource/bricolage-grotesque/700.css';
 import '@fontsource/bricolage-grotesque/800.css';
 import '@fontsource/geist-mono/500.css';
-import '@fontsource/graduate/400.css';
+import '@fontsource/caveat/700.css';
 import './styles/main.scss';
 import { App } from './App';
+import { OutOfTokensProvider } from './components/OutOfTokens';
 import { ToastProvider } from './components/ui';
 import { AccountProvider } from './state/AccountContext';
 import { makeQueryClient } from './state/query';
@@ -26,7 +27,9 @@ createRoot(document.getElementById('root')!).render(
             <BrowserRouter>
                 <AccountProvider>
                     <ToastProvider>
-                        <App />
+                        <OutOfTokensProvider>
+                            <App />
+                        </OutOfTokensProvider>
                     </ToastProvider>
                 </AccountProvider>
             </BrowserRouter>

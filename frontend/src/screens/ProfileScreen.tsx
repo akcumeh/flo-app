@@ -36,7 +36,12 @@ export function ProfileScreen() {
     const groups: Row[][] = [
         [
             { icon: 'school', label: 'School and courses', to: '/onboarding' },
-            { icon: 'bolt', label: 'Tokens and plans', value: String(account?.tokenBalance ?? '') },
+            {
+                icon: 'bolt',
+                label: 'Tokens and plans',
+                value: String(account?.tokenBalance ?? ''),
+                to: '/tokens',
+            },
             { icon: 'link', label: 'Linked chats', value: chats.join(', ') || undefined },
         ],
         [
@@ -50,7 +55,7 @@ export function ProfileScreen() {
         ],
         [
             { icon: 'help', label: 'Help and FAQ' },
-            { icon: 'chat', label: 'Contact support' },
+            { icon: 'chat', label: 'Contact support', to: '/settings/support' },
             { icon: 'shield', label: 'Privacy and data' },
         ],
     ];

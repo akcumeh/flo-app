@@ -17,6 +17,8 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { ProgressScreen } from './screens/ProgressScreen';
 import { SessionExpiredScreen } from './screens/SessionExpiredScreen';
 import { SignInScreen } from './screens/SignInScreen';
+import { SupportScreen } from './screens/SupportScreen';
+import { TokensScreen, TopUpReturnScreen, TopUpScreen } from './screens/TokensScreens';
 import { TelegramWaitScreen } from './screens/TelegramWaitScreen';
 import { VerifyScreen } from './screens/VerifyScreen';
 import s from './screens/Auth.module.scss';
@@ -45,7 +47,8 @@ function RequireAccount() {
     const onboarding =
         location.pathname === '/onboarding' ||
         location.pathname === '/profile' ||
-        location.pathname.startsWith('/settings');
+        location.pathname.startsWith('/settings') ||
+        location.pathname.startsWith('/tokens');
     if (account && !account.profile?.onboardingComplete && !onboarding) {
         return <Navigate to="/onboarding" replace />;
     }
@@ -75,6 +78,10 @@ export function App() {
                 <Route path="/onboarding" element={<OnboardingScreen />} />
                 <Route path="/profile" element={<ProfileScreen />} />
                 <Route path="/settings/appearance" element={<AppearanceScreen />} />
+                <Route path="/settings/support" element={<SupportScreen />} />
+                <Route path="/tokens" element={<TokensScreen />} />
+                <Route path="/tokens/top-up" element={<TopUpScreen />} />
+                <Route path="/tokens/return" element={<TopUpReturnScreen />} />
                 <Route element={<AppShell />}>
                     <Route path="/home" element={<HomeScreen />} />
                     <Route path="/ask/history" element={<ChatHistoryScreen />} />
