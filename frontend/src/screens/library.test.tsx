@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from '../App';
@@ -204,28 +204,15 @@ describe('Library', () => {
         expect(screen.getByRole('button', { name: 'Practise from this file' })).toBeEnabled();
     });
 
-    it('groups camera pages into one upload', async () => {
+    it('takes PDFs only while photo notes are paused', async () => {
         installFakeBackend();
-        const sent = stubUpload(() => ({
-            status: 201,
-            body: file({ id: 'f7', status: 'reading' }),
-        }));
-        const user = userEvent.setup();
         renderAt('/library/add');
 
         await screen.findByRole('heading', { name: 'Add notes', level: 2 });
-        const page = (n: number) => new File(['x'], `p${n}.jpg`, { type: 'image/jpeg' });
-        await user.upload(screen.getByTestId('photo-input'), [page(1), page(2)]);
-        await screen.findByRole('heading', { name: '2 pages' });
-        await user.upload(screen.getByTestId('photo-input'), page(3));
-        await user.click(screen.getByRole('button', { name: 'Remove page 2' }));
-        await user.click(screen.getByRole('button', { name: 'Done (2)' }));
-
-        await waitFor(() => expect(sent).toHaveLength(1));
-        expect((sent[0].form.getAll('pages') as File[]).map((f) => f.name)).toEqual([
-            'p1.jpg',
-            'p3.jpg',
-        ]);
+        expect(screen.queryByTestId('photo-input')).toBeNull();
+        expect(screen.queryByRole('button', { name: /Take photos/ })).toBeNull();
+        expect(screen.getByTestId('file-input')).toHaveAttribute('accept', 'application/pdf');
+        expect(screen.getByText(/Photos of notes are paused for now/)).toBeInTheDocument();
     });
 
     it('shows why a file failed and deletes it after confirming', async () => {

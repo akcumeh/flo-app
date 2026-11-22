@@ -210,6 +210,17 @@ button.chip[aria-pressed='true'] {
     color: var(--web-text-2);
 }
 
+.notice {
+    @include type.secondary;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: var(--app-radius-input);
+    background: var(--web-sun-tint);
+    color: var(--web-text);
+}
+
 .private {
     @include type.caption;
     display: flex;

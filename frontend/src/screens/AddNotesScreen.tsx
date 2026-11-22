@@ -41,62 +41,6 @@ function caption(j: Job): string {
     return 'Waiting';
 }
 
-function PageTray({
-    pages,
-    onAdd,
-    onRemove,
-    onDone,
-}: {
-    pages: File[];
-    onAdd: () => void;
-    onRemove: (i: number) => void;
-    onDone: () => void;
-}) {
-    const [urls, setUrls] = useState<string[]>([]);
-    useEffect(() => {
-        const next = pages.map((p) => URL.createObjectURL(p));
-        setUrls(next);
-        return () => next.forEach((u) => URL.revokeObjectURL(u));
-    }, [pages]);
-    return (
-        <>
-            <main className={`${s.content} ${s.loose}`}>
-                <h2 className={s.title}>
-                    {pages.length} {pages.length === 1 ? 'page' : 'pages'}
-                </h2>
-                <p className={s.lead}>
-                    Pages of the same notes become one file. Add the rest, then upload.
-                </p>
-                <ul className={s.pages}>
-                    {urls.map((u, i) => (
-                        <li key={u} className={s.page48}>
-                            <img src={u} alt={`Page ${i + 1}`} />
-                            <span>{i + 1}</span>
-                            <button
-                                type="button"
-                                className={s.pageRemove}
-                                aria-label={`Remove page ${i + 1}`}
-                                onClick={() => onRemove(i)}
-                            >
-                                <Icon name="x" />
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </main>
-            <div className={s.spacer} />
-            <div className={s.footer}>
-                <Button block onClick={onDone}>
-                    Done ({pages.length})
-                </Button>
-                <Button variant="secondary" block onClick={onAdd}>
-                    Add another page
-                </Button>
-            </div>
-        </>
-    );
-}
-
 export function AddNotesScreen() {
     const navigate = useNavigate();
     const toast = useToast();
@@ -106,8 +50,6 @@ export function AddNotesScreen() {
     const courses = useQuery({ queryKey: ['courses'], queryFn: listCourses });
     const code = courses.data?.find((e) => e.course.id === courseId)?.course.code;
     const fileInput = useRef<HTMLInputElement>(null);
-    const photoInput = useRef<HTMLInputElement>(null);
-    const [pages, setPages] = useState<File[]>([]);
     const [jobs, setJobs] = useState<Job[] | null>(null);
     const left = useRef(false);
 
@@ -123,7 +65,6 @@ export function AddNotesScreen() {
 
     const run = async (list: Job[]) => {
         setJobs(list);
-        setPages([]);
         const saved: string[] = [];
         for (const j of list) {
             if (j.abort.signal.aborted) continue;
@@ -164,11 +105,6 @@ export function AddNotesScreen() {
         void run([...picked].map((f) => job(f.name, [f])));
     };
 
-    const pickPhotos = (picked: FileList | null) => {
-        if (!picked || picked.length === 0) return;
-        setPages((prev) => [...prev, ...picked]);
-    };
-
     const inputs = (
         <>
             <input
@@ -180,19 +116,6 @@ export function AddNotesScreen() {
                 data-testid="file-input"
                 onChange={(e) => {
                     pickFiles(e.target.files);
-                    e.target.value = '';
-                }}
-            />
-            <input
-                ref={photoInput}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                multiple
-                hidden
-                data-testid="photo-input"
-                onChange={(e) => {
-                    pickPhotos(e.target.files);
                     e.target.value = '';
                 }}
             />
@@ -280,35 +203,13 @@ export function AddNotesScreen() {
         );
     }
 
-    if (pages.length > 0) {
-        return (
-            <div className={s.page}>
-                <AppBar title="Add notes" back={-1} />
-                <PageTray
-                    pages={pages}
-                    onAdd={() => photoInput.current?.click()}
-                    onRemove={(i) => setPages((prev) => prev.filter((_, k) => k !== i))}
-                    onDone={() =>
-                        void run([
-                            job(
-                                `Handwritten · ${pages.length} ${pages.length === 1 ? 'page' : 'pages'}`,
-                                pages
-                            ),
-                        ])
-                    }
-                />
-                {inputs}
-            </div>
-        );
-    }
-
     return (
         <div className={s.page}>
             <AppBar title="Add notes" />
             <main className={`${s.content} ${s.loose}`}>
                 <h2 className={s.title}>{code ? `Add notes to ${code}` : 'Add notes'}</h2>
                 <p className={s.lead}>
-                    Lecture slides, handouts, past questions or your own handwritten notes all work.
+                    Lecture slides, handouts and past questions all work, as PDFs.
                 </p>
                 <button type="button" className={s.tile} onClick={() => fileInput.current?.click()}>
                     <span className={s.tileIcon}>
@@ -320,22 +221,10 @@ export function AddNotesScreen() {
                     </span>
                     <Icon name="caret-right" className={s.caret} />
                 </button>
-                <button
-                    type="button"
-                    className={s.tile}
-                    onClick={() => photoInput.current?.click()}
-                >
-                    <span className={`${s.tileIcon} ${s.tileIconBrand}`}>
-                        <Icon name="camera-solid" />
-                    </span>
-                    <span className={s.tileText}>
-                        <span className={s.tileTitle}>Take photos</span>
-                        <span className={s.tileBody}>
-                            Handwritten is fine. Several pages at once.
-                        </span>
-                    </span>
-                    <Icon name="caret-right" className={s.caret} />
-                </button>
+                <p className={s.notice} role="note">
+                    <Icon name="info" />
+                    Photos of notes are paused for now. Scan or export your notes as a PDF.
+                </p>
                 <p className={s.private}>
                     <Icon name="lock-small" />
                     Your notes are private. Only you can practise from them.
