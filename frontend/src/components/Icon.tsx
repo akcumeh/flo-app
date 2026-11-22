@@ -84,7 +84,18 @@ export type IconName =
     | 'upload'
     | 'warning-fill'
     | 'wifi-off'
-    | 'x';
+    | 'x'
+    | 'mode-chip'
+    | 'close-session'
+    | 'caret-down-small'
+    | 'x-small'
+    | 'camera-small'
+    | 'book-large'
+    | 'row-chat'
+    | 'row-cards'
+    | 'row-clock'
+    | 'row-file'
+    | 'row-bolt';
 
 interface IconProps {
     name: IconName;

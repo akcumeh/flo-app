@@ -52,7 +52,10 @@ export const api: FlorenceApi = {
         data(
             client.POST('/v1/sessions/{sessionId}/answers', {
                 params: { path: { sessionId }, header: { 'Idempotency-Key': idempotencyKey() } },
-                body: { itemId, answer, answeredAt: new Date().toISOString() },
+                body:
+                    answer === null
+                        ? { itemId, dontKnow: true, answeredAt: new Date().toISOString() }
+                        : { itemId, answer, answeredAt: new Date().toISOString() },
             })
         ),
 

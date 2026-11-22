@@ -30,7 +30,11 @@ export interface FlorenceApi {
     listFiles(): Promise<StoredFile[]>;
     createPrepSession(fileIds: string[], questionCount: number): Promise<PrepSession>;
     getPrepSession(id: string): Promise<PrepSession>;
-    submitPrepAnswer(sessionId: string, questionId: number, answer: string): Promise<Verdict>;
+    submitPrepAnswer(
+        sessionId: string,
+        questionId: number,
+        answer: string | null
+    ): Promise<Verdict>;
     completePrepSession(sessionId: string): Promise<PrepResult>;
     sendMessage(
         conversationId: string | null,
