@@ -155,7 +155,7 @@ export function HomeScreen() {
     const chats = useQuery({
         queryKey: ['conversations', 'recent'],
         queryFn: async () =>
-            (await client.GET('/v1/conversations', { params: { query: { limit: 3 } } })).data!
+            (await client.GET('/v1/conversations', { params: { query: { limit: 5 } } })).data!
                 .items,
     });
     const fact = useQuery({
@@ -337,6 +337,13 @@ export function HomeScreen() {
                             <section className={s.section}>
                                 <div className={s.sectionHead}>
                                     <h2 className={s.sectionTitle}>Recent chats</h2>
+                                    <button
+                                        type="button"
+                                        className={s.seeAll}
+                                        onClick={() => navigate('/ask/history')}
+                                    >
+                                        See all
+                                    </button>
                                 </div>
                                 <div className={s.chatList}>
                                     {chats.data!.map((c) => (
@@ -344,7 +351,7 @@ export function HomeScreen() {
                                             key={c.id}
                                             type="button"
                                             className={s.chat}
-                                            onClick={() => navigate('/ask')}
+                                            onClick={() => navigate(`/ask/${c.id}`)}
                                         >
                                             <Icon name="chat" className={s.chatIcon} />
                                             <span className={s.chatTitle}>

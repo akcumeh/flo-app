@@ -334,6 +334,63 @@ describe('Ask', () => {
     });
 });
 
+describe('Recent chats', () => {
+    it('opens the chat itself from Home and links to every chat', async () => {
+        const fake = installFakeBackend();
+        fake.on('GET', '/v1/conversations', () =>
+            json({
+                items: [
+                    {
+                        id: 'c-7',
+                        title: 'Osmosis in red cells',
+                        mode: 'ask',
+                        lastMessageAt: '2026-11-20T10:00:00Z',
+                    },
+                ],
+                nextCursor: null,
+            })
+        );
+        fake.on('GET', '/v1/conversations/c-7/messages', () =>
+            json({
+                items: [
+                    {
+                        id: 'm1',
+                        role: 'user',
+                        text: 'Why do red cells burst in water?',
+                        citations: [],
+                        charged: 1,
+                        grounded: true,
+                        saved: false,
+                        createdAt: '2026-11-20T10:00:00Z',
+                    },
+                ],
+                nextCursor: null,
+            })
+        );
+        const user = userEvent.setup();
+        renderAt('/home');
+        await user.click(await screen.findByRole('button', { name: /Osmosis in red cells/ }));
+        expect(await screen.findByText('Why do red cells burst in water?')).toBeInTheDocument();
+        expect(fake.calls.some((c) => c.path === '/v1/conversations/c-7/messages')).toBe(true);
+    });
+
+    it('offers See all from Home', async () => {
+        const fake = installFakeBackend();
+        fake.on('GET', '/v1/conversations', () =>
+            json({
+                items: [{ id: 'c-1', title: 'One', mode: 'ask', lastMessageAt: null }],
+                nextCursor: null,
+            })
+        );
+        const user = userEvent.setup();
+        renderAt('/home');
+        await screen.findByRole('heading', { name: 'Recent chats' });
+        const sections = screen.getAllByRole('button', { name: 'See all' });
+        await user.click(sections[sections.length - 1]);
+        expect(await screen.findByRole('heading', { name: 'Chats' })).toBeInTheDocument();
+    });
+});
+
 describe('Prep', () => {
     it('starts a session from a file, waits for generation and shows the verdict', async () => {
         const fake = installFakeBackend();
@@ -399,11 +456,123 @@ describe('Prep', () => {
         renderAt('/prep');
         await user.click(await screen.findByRole('button', { name: 'Start quiz' }));
         await user.click(
-            await screen.findByRole('button', { name: /Golgi apparatus/ }, { timeout: 5000 })
+            await screen.findByRole('radio', { name: /Golgi apparatus/ }, { timeout: 5000 })
         );
-        await screen.findByText('Not quite.');
+        expect(fake.calls.some((c) => c.path === '/v1/sessions/s1/answers')).toBe(false);
+        await user.click(screen.getByRole('button', { name: 'Check answer' }));
+        await screen.findByText('Not quite');
+        expect(
+            screen.getByText(/You chose Golgi apparatus\. The answer is Mitochondrion/)
+        ).toBeTruthy();
         const answer = fake.calls.find((c) => c.path === '/v1/sessions/s1/answers');
         expect(answer?.body).toMatchObject({ itemId: 0, answer: 'Golgi apparatus' });
         expect(answer?.headers.get('Idempotency-Key')).toMatch(/.+/);
+        expect(screen.queryByText(/BIO 102 · Cell biology/)).toBeNull();
+
+        await user.click(screen.getByRole('button', { name: /Not quite/ }));
+        expect(screen.queryByText(/You chose Golgi apparatus/)).toBeNull();
+        expect(screen.getByRole('button', { name: 'See results' })).toBeTruthy();
+    });
+
+    it('takes a typed answer for written questions and sends I don’t know', async () => {
+        const fake = installFakeBackend();
+        const items = [
+            {
+                id: 0,
+                type: 'theory',
+                prompt: 'Explain why a red blood cell bursts in pure water.',
+                marks: 4,
+                difficulty: 'medium',
+                topic: 'Cell transport',
+                sourceLabel: 'notes.pdf, p. 2',
+                state: 'unanswered',
+            },
+            {
+                id: 1,
+                type: 'short',
+                prompt: 'Name the process that moves water across a membrane.',
+                marks: 2,
+                difficulty: 'easy',
+                topic: 'Cell transport',
+                sourceLabel: 'notes.pdf, p. 2',
+                state: 'unanswered',
+            },
+        ];
+        fake.on('GET', '/v1/files', () =>
+            json({
+                items: [
+                    {
+                        id: 'f9',
+                        name: 'notes.pdf',
+                        mimeType: 'application/pdf',
+                        sizeBytes: 1000,
+                        kind: 'document',
+                        status: 'ready',
+                        courseId: 'c-1',
+                        createdAt: '2026-11-10T20:10:00Z',
+                    },
+                ],
+                nextCursor: null,
+            })
+        );
+        fake.on('GET', '/v1/me/courses', () =>
+            json({ items: [{ course: { id: 'c-1', code: 'BIO 201', title: null } }] })
+        );
+        fake.on('GET', '/v1/sessions/s2', () =>
+            json({
+                id: 's2',
+                mode: 'quiz',
+                status: 'active',
+                fileIds: ['f9'],
+                requestedCount: 2,
+                generatedCount: 2,
+                currentIndex: 0,
+                cost: 1,
+                refunded: false,
+                switchableModes: ['quiz'],
+                expiresAt: '2026-11-14T09:00:00Z',
+                items,
+            })
+        );
+        let n = 0;
+        fake.on('POST', '/v1/sessions/s2/answers', () => {
+            n += 1;
+            return json(
+                n === 1
+                    ? {
+                          itemId: 0,
+                          result: 'partly',
+                          awardedMarks: 2,
+                          maxMarks: 4,
+                          correctAnswer: 'Water moves in by osmosis and the cell lyses.',
+                          whyRight: 'You named osmosis but missed lysis.',
+                      }
+                    : {
+                          itemId: 1,
+                          result: 'skipped',
+                          awardedMarks: 0,
+                          maxMarks: 2,
+                          correctAnswer: 'Osmosis',
+                          whyRight: 'Osmosis moves water across a membrane.',
+                      }
+            );
+        });
+        const user = userEvent.setup();
+        renderAt('/prep/s2');
+        const box = await screen.findByRole('textbox', { name: 'Your answer' });
+        expect(await screen.findByText('BIO 201 · Cell transport')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Submit answer' })).toHaveProperty(
+            'disabled',
+            true
+        );
+        await user.type(box, 'Osmosis makes it swell');
+        await user.click(screen.getByRole('button', { name: 'Submit answer' }));
+        await screen.findByText('2 of 4 marks');
+        await user.click(screen.getByRole('button', { name: 'Next question' }));
+        await user.click(await screen.findByRole('button', { name: 'I don’t know' }));
+        await screen.findByText('Here’s the answer');
+        const sent = fake.calls.filter((c) => c.path === '/v1/sessions/s2/answers');
+        expect(sent[0].body).toMatchObject({ itemId: 0, answer: 'Osmosis makes it swell' });
+        expect(sent[1].body).toMatchObject({ itemId: 1, dontKnow: true });
     });
 });
