@@ -116,6 +116,19 @@
     min-width: 0;
 }
 
+.entry {
+    padding-block: 10px;
+}
+
+.rowSub {
+    @include type.caption;
+    display: block;
+    overflow: hidden;
+    color: var(--web-text-2);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .rowValue {
     @include type.secondary;
     flex-shrink: 0;
