@@ -4,6 +4,7 @@ import { extname } from 'node:path';
 import { AppError } from '../common/app-error.js';
 import { DB, type Db, type Queryable } from '../db/db.js';
 import { STORAGE, type ObjectStorage } from '../storage/storage.js';
+import { DOCX_TYPE, isDocx } from './docx.js';
 
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 export const MAX_FILES = 20;
@@ -82,6 +83,7 @@ export function sniffType(buffer: Buffer, declared: string): string | null {
         return 'image/webp';
     }
     if (head.subarray(0, 4).toString('latin1') === 'GIF8') return 'image/gif';
+    if (isDocx(buffer)) return DOCX_TYPE;
     const type = declared.toLowerCase().split(';')[0].trim();
     return AUDIO_TYPES.has(type) ? type : null;
 }
@@ -197,14 +199,15 @@ export class FilesService {
         const types = parts.map((p) => sniffType(p.buffer, p.mimetype));
         let kind: FileKind;
         if (types.every((t) => t?.startsWith('image/'))) kind = 'image';
-        else if (parts.length === 1 && types[0] === 'application/pdf') kind = 'document';
+        else if (parts.length === 1 && (types[0] === 'application/pdf' || types[0] === DOCX_TYPE))
+            kind = 'document';
         else if (parts.length === 1 && types[0]?.startsWith('audio/')) kind = 'audio';
         else {
             throw new AppError(
                 415,
                 'unsupported_type',
                 'Unsupported file',
-                'Upload one PDF, one voice note, or photos of your pages (JPEG, PNG, WebP or GIF).'
+                'Upload one PDF or Word file, one voice note, or photos of your pages (JPEG, PNG, WebP or GIF).'
             );
         }
         const mimeType = kind === 'image' && parts.length > 1 ? 'image/*' : (types[0] as string);

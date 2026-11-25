@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AiRequest } from '../src/ai/ai.provider.js';
-import { makePdf, fakePng } from './fixtures.js';
+import { makeDocx, makePdf, fakePng } from './fixtures.js';
 import { Harness, bearer, signIn, startHarness } from './helpers.js';
 
 const NOTES = [
@@ -203,6 +203,32 @@ describe('files and library', () => {
         expect(other.body.name).toBe('BIO 102 notes-2.pdf');
         const list = await h.http().get('/v1/files').set(bearer(a.body.accessToken)).expect(200);
         expect(list.body.items).toHaveLength(2);
+    });
+
+    it('reads a Word file into page-numbered chunks', async () => {
+        const a = await signIn(h);
+        const res = await upload(a.body.accessToken, [
+            {
+                data: makeDocx(NOTES.map((n) => n.replace('energy', 'energy & <power>'))),
+                name: 'Biology notes.docx',
+                type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            },
+        ]).expect(201);
+        expect(res.body).toMatchObject({ kind: 'document', status: 'reading' });
+        await h.drain();
+        const file = await h
+            .http()
+            .get(`/v1/files/${res.body.id}`)
+            .set(bearer(a.body.accessToken))
+            .expect(200);
+        expect(file.body).toMatchObject({ status: 'ready', pageCount: 2 });
+        const chunks = await h.db.query<{ page: number; text: string }>(
+            'select page, text from file_chunks where file_id = $1 order by ord',
+            [res.body.id]
+        );
+        expect(chunks.map((c) => c.page)).toEqual([1, 2]);
+        expect(chunks[0].text).toContain('energy & <power>');
+        expect(chunks[1].text).toContain('Calvin cycle');
     });
 
     it('refuses unsupported types and mixed uploads', async () => {

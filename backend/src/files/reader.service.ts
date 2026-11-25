@@ -4,6 +4,7 @@ import { AI_PROVIDER, parseJson, type AiProvider } from '../ai/ai.provider.js';
 import { DB, type Db } from '../db/db.js';
 import { JobsService } from '../jobs/jobs.service.js';
 import { STORAGE, type ObjectStorage } from '../storage/storage.js';
+import { DOCX_TYPE, docxPages } from './docx.js';
 import { READ_JOB, type FileKind } from './files.service.js';
 
 export const MAX_PAGES = 300;
@@ -141,9 +142,11 @@ export class ReaderService implements OnModuleInit {
         let pages: string[];
         try {
             pages =
-                file.kind === 'document'
-                    ? await this.readPdf(parts[0].storage_path)
-                    : await this.readImages(parts);
+                file.kind !== 'document'
+                    ? await this.readImages(parts)
+                    : parts[0].mime_type === DOCX_TYPE
+                      ? await this.readDocx(parts[0].storage_path)
+                      : await this.readPdf(parts[0].storage_path);
             if (pages.every((p) => !cleanText(p))) {
                 throw new ReadFailure(
                     'We could not find any text in this file. Try a clearer photo or a PDF with selectable text.'
@@ -185,6 +188,21 @@ export class ReaderService implements OnModuleInit {
                 [fileId, pages.length]
             );
         });
+    }
+
+    private async readDocx(path: string): Promise<string[]> {
+        const pages = docxPages(await this.storage.get(path));
+        if (!pages) {
+            throw new ReadFailure(
+                'This Word file could not be opened. Save it again as .docx, or export it as a PDF.'
+            );
+        }
+        if (pages.length > MAX_PAGES) {
+            throw new ReadFailure(
+                `This file has more than ${MAX_PAGES} pages. Split it into smaller parts and upload those.`
+            );
+        }
+        return pages;
     }
 
     private async readPdf(path: string): Promise<string[]> {
