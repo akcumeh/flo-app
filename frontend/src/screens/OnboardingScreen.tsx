@@ -449,7 +449,7 @@ function NotesStep({ onDone }: { onDone: (uploaded: boolean) => void }) {
         {
             icon: 'doc',
             title: 'Upload a file',
-            body: 'PDF, up to 20 MB',
+            body: 'PDF or Word, up to 20 MB',
             pick: () => fileInput.current?.click(),
         },
         {
@@ -489,7 +489,7 @@ function NotesStep({ onDone }: { onDone: (uploaded: boolean) => void }) {
             <input
                 ref={fileInput}
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 hidden
                 onChange={(e) => void upload(e.target.files)}
             />

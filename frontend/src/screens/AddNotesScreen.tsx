@@ -110,7 +110,7 @@ export function AddNotesScreen() {
             <input
                 ref={fileInput}
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 multiple
                 hidden
                 data-testid="file-input"
@@ -209,7 +209,7 @@ export function AddNotesScreen() {
             <main className={`${s.content} ${s.loose}`}>
                 <h2 className={s.title}>{code ? `Add notes to ${code}` : 'Add notes'}</h2>
                 <p className={s.lead}>
-                    Lecture slides, handouts and past questions all work, as PDFs.
+                    Lecture slides, handouts and past questions all work, as PDF or Word files.
                 </p>
                 <button type="button" className={s.tile} onClick={() => fileInput.current?.click()}>
                     <span className={s.tileIcon}>
@@ -217,13 +217,14 @@ export function AddNotesScreen() {
                     </span>
                     <span className={s.tileText}>
                         <span className={s.tileTitle}>Upload a file</span>
-                        <span className={s.tileBody}>PDF, up to 20 MB</span>
+                        <span className={s.tileBody}>PDF or Word, up to 20 MB</span>
                     </span>
                     <Icon name="caret-right" className={s.caret} />
                 </button>
                 <p className={s.notice} role="note">
                     <Icon name="info" />
-                    Photos of notes are paused for now. Scan or export your notes as a PDF.
+                    Photos of notes are paused for now. Scan or export your notes as a PDF or Word
+                    file.
                 </p>
                 <p className={s.private}>
                     <Icon name="lock-small" />

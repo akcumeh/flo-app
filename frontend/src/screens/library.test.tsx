@@ -204,14 +204,16 @@ describe('Library', () => {
         expect(screen.getByRole('button', { name: 'Practise from this file' })).toBeEnabled();
     });
 
-    it('takes PDFs only while photo notes are paused', async () => {
+    it('takes PDF and Word files while photo notes are paused', async () => {
         installFakeBackend();
         renderAt('/library/add');
 
         await screen.findByRole('heading', { name: 'Add notes', level: 2 });
         expect(screen.queryByTestId('photo-input')).toBeNull();
         expect(screen.queryByRole('button', { name: /Take photos/ })).toBeNull();
-        expect(screen.getByTestId('file-input')).toHaveAttribute('accept', 'application/pdf');
+        const accept = screen.getByTestId('file-input').getAttribute('accept') ?? '';
+        expect(accept.split(',')).toEqual(expect.arrayContaining(['application/pdf', '.docx']));
+        expect(accept).not.toContain('image');
         expect(screen.getByText(/Photos of notes are paused for now/)).toBeInTheDocument();
     });
 

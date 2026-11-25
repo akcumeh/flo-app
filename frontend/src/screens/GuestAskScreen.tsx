@@ -155,7 +155,7 @@ export function GuestAskScreen() {
                 <div ref={endRef} />
             </main>
             <div className={s.dock}>
-                <Composer onSend={(t) => void send(t)} onCamera={() => setPrompt(true)} />
+                <Composer onSend={(t) => void send(t)} onAttach={() => setPrompt(true)} />
             </div>
             <SavePrompt open={prompt} onClose={() => setPrompt(false)} onContinue={signUp} />
         </div>

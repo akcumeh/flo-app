@@ -16,7 +16,7 @@ export function UserBubble({ children }: { children: ReactNode }) {
 }
 
 export function sourceLabel(c: Citation): string {
-    const name = c.label.replace(/\.(pdf|png|jpe?g|webp)$/i, '');
+    const name = c.label.replace(/\.(pdf|docx|png|jpe?g|webp)$/i, '');
     return c.page ? `${name} · p. ${c.page}` : name;
 }
 
@@ -155,20 +155,27 @@ export function AnswerCard({
 
 export function Composer({
     onSend,
-    onCamera,
+    onAttach,
     disabled,
     scope,
     attachment,
+    attachmentKind = 'photo',
     onClearAttachment,
 }: {
     onSend: (text: string) => void;
-    onCamera?: () => void;
+    onAttach?: (kind: 'camera' | 'file') => void;
     disabled?: boolean;
     scope?: string | null;
     attachment?: string | null;
+    attachmentKind?: 'photo' | 'file';
     onClearAttachment?: () => void;
 }) {
     const [draft, setDraft] = useState('');
+    const [menu, setMenu] = useState(false);
+    const pick = (kind: 'camera' | 'file') => {
+        setMenu(false);
+        onAttach?.(kind);
+    };
     const input = useRef<HTMLInputElement>(null);
     const submit = (e: FormEvent) => {
         e.preventDefault();
@@ -190,13 +197,18 @@ export function Composer({
                     ) : null}
                     {attachment ? (
                         <span className={s.scope}>
-                            <Icon name="camera-line" className={s.small} />
+                            <Icon
+                                name={attachmentKind === 'file' ? 'file-line' : 'camera-line'}
+                                className={s.small}
+                            />
                             {attachment}
                             {onClearAttachment ? (
                                 <button
                                     type="button"
                                     className={s.clear}
-                                    aria-label="Remove photo"
+                                    aria-label={
+                                        attachmentKind === 'file' ? 'Remove file' : 'Remove photo'
+                                    }
                                     onClick={onClearAttachment}
                                 >
                                     <Icon name="x" />
@@ -207,14 +219,49 @@ export function Composer({
                 </div>
             ) : null}
             <div className={s.row}>
-                <button
-                    type="button"
-                    className={s.round}
-                    aria-label="Ask about a photo"
-                    onClick={onCamera}
-                >
-                    <Icon name="camera-line" />
-                </button>
+                <div className={s.attach}>
+                    <button
+                        type="button"
+                        className={`${s.round} ${menu ? s.roundOn : ''}`}
+                        aria-label="Add a photo or file"
+                        aria-expanded={menu}
+                        aria-haspopup="menu"
+                        onClick={() => setMenu((m) => !m)}
+                    >
+                        <Icon name="plus" />
+                    </button>
+                    {menu ? (
+                        <>
+                            <button
+                                type="button"
+                                className={s.scrim}
+                                aria-label="Close"
+                                tabIndex={-1}
+                                onClick={() => setMenu(false)}
+                            />
+                            <div className={s.attachMenu} role="menu">
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    className={s.attachItem}
+                                    onClick={() => pick('camera')}
+                                >
+                                    <Icon name="camera-line" />
+                                    Camera
+                                </button>
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    className={s.attachItem}
+                                    onClick={() => pick('file')}
+                                >
+                                    <Icon name="file-line" />
+                                    File
+                                </button>
+                            </div>
+                        </>
+                    ) : null}
+                </div>
                 <input
                     ref={input}
                     className={s.input}
@@ -246,7 +293,7 @@ export function SourceSheet({
     onClose: () => void;
 }) {
     const navigate = useNavigate();
-    const name = citation?.label.replace(/\.(pdf|png|jpe?g|webp)$/i, '') ?? '';
+    const name = citation?.label.replace(/\.(pdf|docx|png|jpe?g|webp)$/i, '') ?? '';
     return (
         <Sheet
             open={citation !== null}

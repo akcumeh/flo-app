@@ -232,6 +232,59 @@
     }
 }
 
+.roundOn {
+    background: var(--web-blue-tint);
+    color: var(--web-brand-text);
+}
+
+.attach {
+    position: relative;
+}
+
+.scrim {
+    position: fixed;
+    z-index: 1;
+    inset: 0;
+    background: transparent;
+    cursor: default;
+}
+
+.attachMenu {
+    position: absolute;
+    z-index: 2;
+    bottom: calc(100% + 8px);
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 168px;
+    padding: 6px;
+    border: 1px solid var(--web-line);
+    border-radius: 16px;
+    background: var(--web-surface);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
+}
+
+.attachItem {
+    @include type.body;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: var(--web-text);
+    text-align: left;
+
+    &:hover,
+    &:focus-visible {
+        background: var(--web-surface-2);
+    }
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
 .send {
     background: var(--web-brand);
     color: var(--web-on-brand);
