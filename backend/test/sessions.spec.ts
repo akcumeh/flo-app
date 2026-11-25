@@ -69,14 +69,14 @@ describe('study sessions', () => {
         expect(row.last).toBe(row.balance);
     }
 
-    it('charges 1 token at start and serves items without answers', async () => {
+    it('charges 1 token per question at start and serves items without answers', async () => {
         const a = await signIn(h);
         const s = await start(a.body.accessToken);
-        expect(await balance(a.body.accessToken)).toBe(9);
+        expect(await balance(a.body.accessToken)).toBe(7);
         expect(s).toMatchObject({
             status: 'active',
             mode: 'quiz',
-            cost: 1,
+            cost: 3,
             refunded: false,
             generatedCount: 3,
             currentIndex: 0,
@@ -114,7 +114,86 @@ describe('study sessions', () => {
         expect(n).toBe(0);
     });
 
-    it('refuses a file too small for 2 questions without charging', async () => {
+    it('answers 402 when the balance is below the question count', async () => {
+        const a = await signIn(h);
+        const fileId = await readyFile(a.body.accessToken);
+        await h.db.query('update accounts set token_balance = 5 where id = $1', [
+            a.body.account.id,
+        ]);
+        const res = await h
+            .http()
+            .post('/v1/sessions')
+            .set(bearer(a.body.accessToken))
+            .send({ mode: 'quiz', fileIds: [fileId], questionCount: 6 })
+            .expect(402);
+        expect(res.body.code).toBe('insufficient_tokens');
+        expect(await balance(a.body.accessToken)).toBe(5);
+    });
+
+    it('refuses fewer than 3 questions', async () => {
+        const a = await signIn(h);
+        const fileId = await readyFile(a.body.accessToken);
+        await h
+            .http()
+            .post('/v1/sessions')
+            .set(bearer(a.body.accessToken))
+            .send({ mode: 'quiz', fileIds: [fileId], questionCount: 2 })
+            .expect(400);
+        expect(await balance(a.body.accessToken)).toBe(10);
+    });
+
+    it('asks the model again until it has written every question', async () => {
+        const a = await signIn(h);
+        const inner = studyResponder();
+        let calls = 0;
+        h.ai.respond = (req) => {
+            const out = inner(req);
+            if (!/Write exactly/.test(String(req.messages[0].content))) return out;
+            calls += 1;
+            const { items } = JSON.parse(out) as { items: Array<{ prompt: string }> };
+            const kept = calls === 1 ? items.slice(0, 2) : items;
+            return JSON.stringify({
+                items: kept.map((it) => ({ ...it, prompt: `Round ${calls}: ${it.prompt}` })),
+            });
+        };
+        const s = await start(a.body.accessToken, { questionCount: 6 });
+        expect(calls).toBe(2);
+        expect(s).toMatchObject({ status: 'active', cost: 6, generatedCount: 6 });
+        expect(await balance(a.body.accessToken)).toBe(4);
+        await ledgerHolds(a.body.account.id);
+    });
+
+    it('fails and refunds in full when the model still writes fewer than asked', async () => {
+        const a = await signIn(h);
+        h.ai.respond = studyResponder({ count: 4 });
+        const fileId = await readyFile(a.body.accessToken);
+        const res = await h
+            .http()
+            .post('/v1/sessions')
+            .set(bearer(a.body.accessToken))
+            .send({ mode: 'quiz', fileIds: [fileId], questionCount: 6 })
+            .expect(202);
+        await h.drain();
+        const s = await h
+            .http()
+            .get(`/v1/sessions/${res.body.id}`)
+            .set(bearer(a.body.accessToken))
+            .expect(200);
+        expect(s.body).toMatchObject({ status: 'failed', refunded: true, cost: 6 });
+        expect(await balance(a.body.accessToken)).toBe(10);
+        const ledger = await h
+            .http()
+            .get('/v1/tokens/ledger')
+            .set(bearer(a.body.accessToken))
+            .expect(200);
+        expect(ledger.body.items.slice(0, 2)).toMatchObject([
+            { reason: 'refund', delta: 6, detail: expect.stringMatching(/^6 questions, .+/) },
+            { reason: 'prep_charge', delta: -6, detail: expect.stringMatching(/^6 questions/) },
+        ]);
+        await ledgerHolds(a.body.account.id);
+    });
+
+    it('refuses a file too small for 3 questions without charging', async () => {
         const a = await signIn(h);
         const fileId = await readyFile(a.body.accessToken, [
             'Cells divide by mitosis and that is all these notes say on it.',
@@ -203,11 +282,12 @@ describe('study sessions', () => {
         expect(String(marking?.messages[0].content)).toContain('semi-permeable membrane');
     });
 
-    it('makes a study day from one finished 2-question session and completes idempotently', async () => {
+    it('makes a study day from one finished 3-question session and completes idempotently', async () => {
         const a = await signIn(h);
-        const s = await start(a.body.accessToken, { questionCount: 2 });
+        const s = await start(a.body.accessToken, { questionCount: 3 });
         await answer(a.body.accessToken, s.id, { itemId: 0, answer: 'ATP' }).expect(200);
         await answer(a.body.accessToken, s.id, { itemId: 1, dontKnow: true }).expect(200);
+        await answer(a.body.accessToken, s.id, { itemId: 2, dontKnow: true }).expect(200);
 
         const [r1, r2] = await Promise.all([
             h.http().post(`/v1/sessions/${s.id}/complete`).set(bearer(a.body.accessToken)),
@@ -217,12 +297,12 @@ describe('study sessions', () => {
         expect(r1.body.id).toBe(r2.body.id);
         expect(r1.body).toMatchObject({
             score: 1,
-            total: 2,
-            charged: 1,
-            balance: 9,
-            failedTopics: ['Active transport'],
+            total: 6,
+            charged: 3,
+            balance: 7,
         });
-        expect(r1.body.studyDay).toEqual({ counted: true, justEarned: true, streak: 1 });
+        expect([...r1.body.failedTopics].sort()).toEqual(['Active transport', 'Osmosis']);
+        expect(r1.body.studyDay).toMatchObject({ counted: true, streak: 1 });
         const again = await h
             .http()
             .post(`/v1/sessions/${s.id}/complete`)
@@ -245,23 +325,23 @@ describe('study sessions', () => {
         expect(r.body.studyDay.counted).toBe(false);
     });
 
-    it('refunds once when the student leaves with zero answers', async () => {
+    it('keeps the charge when the student leaves without answering', async () => {
         const a = await signIn(h);
         const s = await start(a.body.accessToken);
         await h.http().delete(`/v1/sessions/${s.id}`).set(bearer(a.body.accessToken)).expect(204);
         await h.http().delete(`/v1/sessions/${s.id}`).set(bearer(a.body.accessToken)).expect(204);
-        expect(await balance(a.body.accessToken)).toBe(10);
+        expect(await balance(a.body.accessToken)).toBe(7);
         const refunds = await h.db.query(
             `select 1 from token_ledger where account_id = $1 and reason = 'refund'`,
             [a.body.account.id]
         );
-        expect(refunds).toHaveLength(1);
+        expect(refunds).toHaveLength(0);
         const view = await h
             .http()
             .get(`/v1/sessions/${s.id}`)
             .set(bearer(a.body.accessToken))
             .expect(200);
-        expect(view.body).toMatchObject({ status: 'expired', refunded: true });
+        expect(view.body).toMatchObject({ status: 'expired', refunded: false, cost: 3 });
         await ledgerHolds(a.body.account.id);
     });
 
@@ -270,7 +350,7 @@ describe('study sessions', () => {
         const s = await start(a.body.accessToken);
         await answer(a.body.accessToken, s.id, { itemId: 0, answer: 'ATP' }).expect(200);
         await h.http().delete(`/v1/sessions/${s.id}`).set(bearer(a.body.accessToken)).expect(204);
-        expect(await balance(a.body.accessToken)).toBe(9);
+        expect(await balance(a.body.accessToken)).toBe(7);
     });
 
     it('closes the open session when another starts', async () => {
@@ -282,8 +362,8 @@ describe('study sessions', () => {
             .get(`/v1/sessions/${first.id}`)
             .set(bearer(a.body.accessToken))
             .expect(200);
-        expect(old.body).toMatchObject({ status: 'expired', refunded: true });
-        expect(await balance(a.body.accessToken)).toBe(9);
+        expect(old.body).toMatchObject({ status: 'expired', refunded: false });
+        expect(await balance(a.body.accessToken)).toBe(4);
     });
 
     it('repeats missed flashcards in a second round', async () => {
@@ -334,10 +414,10 @@ describe('study sessions', () => {
             ['flashcard', 'unanswered'],
             ['flashcard', 'unanswered'],
         ]);
-        expect(await balance(a.body.accessToken)).toBe(9);
+        expect(await balance(a.body.accessToken)).toBe(7);
     });
 
-    it('lists mistakes and retries them as a new 1-token session', async () => {
+    it('lists mistakes and retries them as a new session at 1 token per item', async () => {
         const a = await signIn(h);
         const s = await start(a.body.accessToken);
         await answer(a.body.accessToken, s.id, { itemId: 0, answer: 'Light' }).expect(200);
@@ -371,15 +451,16 @@ describe('study sessions', () => {
             .set(bearer(a.body.accessToken))
             .send({})
             .expect(202);
-        expect(retry.body).toMatchObject({ status: 'active', generatedCount: 3 });
-        expect(await balance(a.body.accessToken)).toBe(8);
+        expect(retry.body).toMatchObject({ status: 'active', generatedCount: 3, cost: 3 });
+        expect(await balance(a.body.accessToken)).toBe(4);
     });
 
-    it('refuses a retry with fewer than 2 mistakes', async () => {
+    it('refuses a retry with fewer than 3 mistakes', async () => {
         const a = await signIn(h);
-        const s = await start(a.body.accessToken, { questionCount: 2 });
+        const s = await start(a.body.accessToken, { questionCount: 3 });
         await answer(a.body.accessToken, s.id, { itemId: 0, answer: 'ATP' }).expect(200);
         await answer(a.body.accessToken, s.id, { itemId: 1, answer: 'True' }).expect(200);
+        await answer(a.body.accessToken, s.id, { itemId: 2, dontKnow: true }).expect(200);
         const res = await h
             .http()
             .post(`/v1/sessions/${s.id}/retry`)
@@ -391,7 +472,7 @@ describe('study sessions', () => {
 
     it('renders a share card as PNG', async () => {
         const a = await signIn(h);
-        const s = await start(a.body.accessToken, { questionCount: 2 });
+        const s = await start(a.body.accessToken, { questionCount: 3 });
         await h
             .http()
             .get(`/v1/sessions/${s.id}/share-image`)
@@ -457,16 +538,19 @@ describe('study sessions', () => {
 
     it('drops gapped prompts from quiz mode', async () => {
         const base = studyResponder({ quizTypes: ['mcq', 'true_false'] });
+        let writes = 0;
         h.ai.respond = (req) => {
             const out = base(req);
             if (!('items' in ((req.jsonSchema?.properties ?? {}) as object))) return out;
+            writes += 1;
             const parsed = JSON.parse(out) as { items: Array<{ prompt: string }> };
-            parsed.items[0].prompt = 'The sodium-potassium pump uses ____ to move ions.';
+            if (writes === 1) parsed.items[0].prompt = 'The pump uses ____ to move ions.';
+            else parsed.items.forEach((it, i) => (it.prompt = `Extra ${i}: ${it.prompt}`));
             return JSON.stringify(parsed);
         };
         const a = await signIn(h);
         const s = await start(a.body.accessToken, { questionCount: 4 });
-        expect(s.items.length).toBeGreaterThanOrEqual(2);
+        expect(s.items).toHaveLength(4);
         expect(s.items.some((i: { prompt: string }) => i.prompt.includes('____'))).toBe(false);
     });
 

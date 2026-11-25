@@ -56,7 +56,7 @@ describe('home, progress and the skeleton boards', () => {
             .http()
             .post('/v1/sessions')
             .set(bearer(t))
-            .send({ mode: 'quiz', fileIds: [up.body.id], questionCount: 2 })
+            .send({ mode: 'quiz', fileIds: [up.body.id], questionCount: 3 })
             .expect(202);
         await h.drain();
         await h
@@ -70,7 +70,7 @@ describe('home, progress and the skeleton boards', () => {
         const home = await h.http().get('/v1/home').set(bearer(t)).expect(200);
         expect(home.body).toMatchObject({
             variant: 'today',
-            resume: { sessionId: s.body.id, mode: 'quiz', answered: 1, total: 2 },
+            resume: { sessionId: s.body.id, mode: 'quiz', answered: 1, total: 3 },
         });
 
         const progress = await h.http().get('/v1/progress').set(bearer(t)).expect(200);

@@ -241,10 +241,10 @@ describe('push, reminders, referral, export and deletion', () => {
                 .http()
                 .post('/v1/sessions')
                 .set(bearer(t))
-                .send({ mode: 'quiz', fileIds: [up.body.id], questionCount: 2 })
+                .send({ mode: 'quiz', fileIds: [up.body.id], questionCount: 3 })
                 .expect(202);
             await h.drain();
-            for (const itemId of [0, 1]) {
+            for (const itemId of [0, 1, 2]) {
                 await h
                     .http()
                     .post(`/v1/sessions/${sres.body.id}/answers`)
@@ -261,7 +261,7 @@ describe('push, reminders, referral, export and deletion', () => {
         );
         expect(Object.fromEntries(balances.map((b) => [b.id, b.token_balance]))).toEqual({
             [inviter.body.account.id]: 15,
-            [invitee.body.account.id]: 13,
+            [invitee.body.account.id]: 9,
         });
     });
 

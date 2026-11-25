@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { AppError } from '../common/app-error.js';
 import { CLOCK, type Clock } from '../common/clock.js';
 import { lagosDate } from '../common/lagos.js';
@@ -24,6 +24,8 @@ import {
 
 export const GENERATE_JOB = 'generate_session';
 const SESSION_TTL_HOURS = 24;
+export const MIN_ITEMS = 3;
+export const MAX_ITEMS = 30;
 const OFFLINE_LIMIT_MS = 48 * 60 * 60 * 1000;
 const OPEN = ['generating', 'active'];
 
@@ -39,6 +41,7 @@ interface SessionRow {
     topic_ids: string[];
     requested_count: number;
     round: number;
+    cost: number;
     refunded_at: Date | null;
     time_limit_seconds: number | null;
     created_at: Date;
@@ -90,7 +93,7 @@ export interface AnswerInput {
     dontKnow?: boolean;
 }
 
-const SESSION_COLUMNS = `id, account_id, mode, status, file_ids, topic_ids, requested_count, round, refunded_at,
+const SESSION_COLUMNS = `id, account_id, mode, status, file_ids, topic_ids, requested_count, round, cost, refunded_at,
   time_limit_seconds, created_at, expires_at`;
 const ITEM_COLUMNS =
     'round, idx, type, prompt, options, back, answer_key, marks, difficulty, topic, source_label';
@@ -107,6 +110,8 @@ function chooseOption(answer: string, options: string[]): string | null {
 
 @Injectable()
 export class SessionsService implements OnModuleInit {
+    private readonly logger = new Logger(SessionsService.name);
+
     constructor(
         @Inject(DB) private readonly db: Db,
         @Inject(CLOCK) private readonly clock: Clock,
@@ -149,7 +154,7 @@ export class SessionsService implements OnModuleInit {
 
     private async refundOnce(q: Queryable, s: SessionRow) {
         if (s.refunded_at) return;
-        await this.tokens.credit(q, s.account_id, 1, 'refund', {
+        await this.tokens.credit(q, s.account_id, s.cost, 'refund', {
             refType: 'session',
             refId: s.id,
             idempotencyKey: `refund:session:${s.id}`,
@@ -162,11 +167,6 @@ export class SessionsService implements OnModuleInit {
     }
 
     private async close(q: Queryable, s: SessionRow, status: 'expired' | 'completed') {
-        const [{ n }] = await q.query<{ n: number }>(
-            'select count(*)::int as n from session_answers where session_id = $1',
-            [s.id]
-        );
-        if (n === 0) await this.refundOnce(q, s);
         await q.query(
             'update study_sessions set status = $2, completed_at = coalesce(completed_at, now()) where id = $1',
             [s.id, status]
@@ -187,12 +187,13 @@ export class SessionsService implements OnModuleInit {
             await this.close(q, s, 'expired');
     }
 
-    private async charge(q: Queryable, accountId: string, sessionId: string) {
-        await this.tokens.debit(q, accountId, 1, 'prep_charge', {
+    private async charge(q: Queryable, accountId: string, sessionId: string, items: number) {
+        await this.tokens.debit(q, accountId, items, 'prep_charge', {
             idempotencyKey: `session:${sessionId}`,
             refType: 'session',
             refId: sessionId,
         });
+        await q.query('update study_sessions set cost = $2 where id = $1', [sessionId, items]);
     }
 
     private async insertItems(
@@ -233,6 +234,13 @@ export class SessionsService implements OnModuleInit {
             timeLimitMinutes?: number;
         }
     ) {
+        const count = body.questionCount ?? 10;
+        if (!Number.isInteger(count) || count < MIN_ITEMS || count > MAX_ITEMS) {
+            throw AppError.badRequest(
+                'invalid_request',
+                `questionCount must be between ${MIN_ITEMS} and ${MAX_ITEMS}.`
+            );
+        }
         await this.generator.material(this.db, accountId, body.fileIds, body.topicIds);
         const id = await this.db.transaction(async (q) => {
             await this.closeOpen(q, accountId);
@@ -244,14 +252,14 @@ export class SessionsService implements OnModuleInit {
                     body.mode,
                     [...new Set(body.fileIds)],
                     (body.topicIds ?? []).filter((t) => UUID.test(t)),
-                    body.questionCount ?? 10,
+                    count,
                     body.mode === 'mock_exam' && body.timeLimitMinutes
                         ? body.timeLimitMinutes * 60
                         : null,
                     SESSION_TTL_HOURS,
                 ]
             );
-            await this.charge(q, accountId, row.id);
+            await this.charge(q, accountId, row.id, count);
             await q.query('insert into jobs (kind, payload) values ($1, $2)', [
                 GENERATE_JOB,
                 JSON.stringify({ sessionId: row.id }),
@@ -283,8 +291,11 @@ export class SessionsService implements OnModuleInit {
             }
             throw error;
         }
-        if (items.length < 2) {
-            await this.fail(sessionId, 'There was not enough in this material for 2 questions.');
+        if (items.length < s.cost) {
+            await this.fail(
+                sessionId,
+                `Florence could not write ${s.cost} questions from this material. Your tokens are back.`
+            );
             return;
         }
         await this.db.transaction(async (q) => {
@@ -307,6 +318,7 @@ export class SessionsService implements OnModuleInit {
     }
 
     async fail(sessionId: string, reason: string) {
+        this.logger.warn(`Session ${sessionId} failed: ${reason}`);
         await this.db.transaction(async (q) => {
             const [s] = await q.query<SessionRow>(
                 `select ${SESSION_COLUMNS} from study_sessions where id = $1 for update`,
@@ -362,7 +374,7 @@ export class SessionsService implements OnModuleInit {
             round: s.round,
             items: items.map((it) => this.itemView(it, state.get(it.idx) ?? 'unanswered')),
             switchableModes: MODES,
-            cost: 1 as const,
+            cost: s.cost,
             refunded: Boolean(s.refunded_at),
             ...(s.time_limit_seconds ? { timeLimitSeconds: s.time_limit_seconds } : {}),
             expiresAt: new Date(s.expires_at).toISOString(),
@@ -784,7 +796,6 @@ export class SessionsService implements OnModuleInit {
                 [s.id]
             );
             const byIdx = new Map(answers.map((a) => [a.item_idx, a]));
-            if (answers.length === 0) await this.refundOnce(q, s);
             await q.query(
                 `update study_sessions set status = 'completed', completed_at = coalesce(completed_at, now()) where id = $1`,
                 [s.id]
@@ -838,7 +849,7 @@ export class SessionsService implements OnModuleInit {
                     items.reduce((n, it) => n + it.marks, 0),
                     failedTopics,
                     files.map((f) => f.name),
-                    s.refunded_at ? 0 : 1,
+                    s.refunded_at ? 0 : s.cost,
                     JSON.stringify(studyDay),
                     reward,
                 ]
@@ -882,12 +893,13 @@ export class SessionsService implements OnModuleInit {
         order by i.idx`,
             [source.id]
         );
-        if (wrong.length < 2) {
+        if (wrong.length < MIN_ITEMS) {
             throw AppError.conflict(
                 'not_enough_material',
-                'Fewer than 2 questions were missed, so there is nothing to retry.'
+                `Fewer than ${MIN_ITEMS} questions were missed, so there is nothing to retry.`
             );
         }
+        const count = Math.min(MAX_ITEMS, wrong.length);
         const nextMode = mode ?? source.mode;
         const sameMode = nextMode === source.mode;
         if (!sameMode)
@@ -904,18 +916,18 @@ export class SessionsService implements OnModuleInit {
                     sameMode ? 'active' : 'generating',
                     source.file_ids,
                     source.topic_ids,
-                    Math.min(30, Math.max(2, wrong.length)),
+                    count,
                     source.id,
                     SESSION_TTL_HOURS,
                 ]
             );
-            await this.charge(q, accountId, row.id);
+            await this.charge(q, accountId, row.id, count);
             if (sameMode) {
                 await this.insertItems(
                     q,
                     row.id,
                     1,
-                    wrong.slice(0, 30).map((r, idx) => ({
+                    wrong.slice(0, count).map((r, idx) => ({
                         idx,
                         type: r.type,
                         prompt: r.prompt,

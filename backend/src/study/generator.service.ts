@@ -145,6 +145,7 @@ export interface GeneratedItem {
 }
 
 const MATERIAL_CHARS = 120_000;
+const MAX_ROUNDS = 3;
 export const MIN_MATERIAL_CHARS = 150;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function shuffle<T>(items: T[]): T[] {
@@ -249,7 +250,7 @@ export class GeneratorService {
         if (text.replace(/\[F\d+ p\d+\]/g, '').trim().length < MIN_MATERIAL_CHARS) {
             throw AppError.conflict(
                 'not_enough_material',
-                'There is not enough in this material for 2 questions. Add more notes.'
+                'There is not enough in this material for 3 questions. Add more notes.'
             );
         }
         return { files: ordered.map((f) => ({ id: f.id, name: f.name, ref: f.ref })), text };
@@ -261,18 +262,62 @@ export class GeneratorService {
         count: number,
         focus?: string
     ): Promise<GeneratedItem[]> {
+        const items: GeneratedItem[] = [];
+        const seen = new Set<string>();
+        for (let round = 0; round < MAX_ROUNDS && items.length < count; round += 1) {
+            const batch = await this.write(
+                material,
+                mode,
+                count - items.length,
+                focus,
+                items.map((it) => it.prompt)
+            );
+            for (const it of batch) {
+                const key = normalise(it.prompt);
+                if (seen.has(key)) continue;
+                seen.add(key);
+                items.push(it);
+                if (items.length === count) break;
+            }
+        }
+        return items;
+    }
+
+    private async write(
+        material: Material,
+        mode: StudyMode,
+        count: number,
+        focus: string | undefined,
+        already: string[]
+    ): Promise<GeneratedItem[]> {
         const fileList = material.files.map((f) => `F${f.ref}: ${f.name}`).join('\n');
+        const avoid =
+            already.length > 0
+                ? `These are already written. Do not repeat or reword any of them:\n${already.map((p) => `- ${p}`).join('\n')}
+`
+                : '';
         const reply = await this.ai.complete({
             system: GENERATE_SYSTEM,
             messages: [
                 {
                     role: 'user',
-                    content: `Files:\n${fileList}\n\nNotes:\n${material.text}\n\nWrite exactly ${count} study items for ${mode.replace('_', ' ')} mode. ${MODE_BRIEF[mode]}
+                    content: `Files:
+${fileList}
+
+Notes:
+${material.text}
+
+Write exactly ${count} study items for ${mode.replace('_', ' ')} mode. Not fewer and not more: the student is paying for ${count}. ${MODE_BRIEF[mode]}
 Allowed types: ${MODE_TYPES[mode].join(', ')}.
 For mcq give 4 options and set "answer" to the full text of the correct option; give a reason for each wrong option in "wrongOptionReasons". Make every wrong option a real term or value from this subject that a student who half-knows the topic could pick: a common misconception, a related concept, or a near-miss number. Keep all 4 options the same kind of thing, the same grammar and about the same length, and never make the correct one the longest or most detailed. No made-up words, joke options, "all of the above" or "none of the above". For true_false set options to ["True", "False"].
 For short, theory and calculation give a model answer in "answer". Use empty arrays and empty strings for fields that do not apply.
 Set "marks" to 1 for mcq, true_false, fill_gap and flashcard, and 2 to 10 for written answers.
-${focus ? `Focus on: ${focus}\n` : ''}Spread the items across the material and vary the difficulty.`,
+${avoid}${
+                        focus
+                            ? `Focus on: ${focus}
+`
+                            : ''
+                    }Spread the items across the material and vary the difficulty.`,
                 },
             ],
             maxTokens: 32000,
@@ -280,7 +325,7 @@ ${focus ? `Focus on: ${focus}\n` : ''}Spread the items across the material and v
             jsonSchema: ITEMS_SCHEMA,
         });
         const { items = [] } = parseJson<{ items?: Array<Record<string, unknown>> }>(reply);
-        return this.sanitise(items, material, mode).slice(0, count);
+        return this.sanitise(items, material, mode);
     }
 
     private sanitise(

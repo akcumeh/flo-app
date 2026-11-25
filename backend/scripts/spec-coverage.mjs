@@ -11,9 +11,9 @@ function operations(specText) {
     for (const line of specText.split(/\r?\n/)) {
         if (/^webhooks:/.test(line)) inWebhooks = true;
         else if (/^\S/.test(line)) inWebhooks = false;
-        const p = /^ {2}(\/\S+):\s*$/.exec(line);
+        const p = /^ {2,4}(\/\S+):\s*$/.exec(line);
         if (p && !inWebhooks) path = p[1];
-        const m = /^ {4}(get|post|put|patch|delete):\s*$/.exec(line);
+        const m = /^ {4,8}(get|post|put|patch|delete):\s*$/.exec(line);
         if (m) method = m[1];
         const o = /^\s+operationId:\s*(\w+)/.exec(line);
         if (o) {
