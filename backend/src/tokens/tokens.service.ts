@@ -29,6 +29,7 @@ export interface LedgerEntry {
     reason: LedgerReason;
     balanceAfter: number;
     createdAt: string;
+    detail: string | null;
 }
 
 const UNIQUE_VIOLATION = '23505';
@@ -134,11 +135,30 @@ export class TokensService {
             reason: LedgerReason;
             balance_after: number;
             created_at: Date;
+            detail: string | null;
         }>(
-            `select id::int as id, delta, reason, balance_after, created_at
-         from token_ledger
-        where account_id = $1 and ($2::bigint is null or id < $2)
-        order by id desc
+            `select l.id::int as id, l.delta, l.reason, l.balance_after, l.created_at,
+                case
+                    when l.ref_type = 'session' then (
+                        select s.requested_count || ' questions' || coalesce(', ' || f.name, '')
+                          from study_sessions s
+                          left join stored_files f on f.id = s.file_ids[1]
+                         where s.id::text = l.ref_id)
+                    when l.ref_type = 'purchase' then (
+                        select '₦' || to_char(p.amount_kobo / 100, 'FM999,999,999')
+                          from purchases p
+                         where p.reference = l.ref_id)
+                    when l.ref_type = 'request' then (
+                        select c.title
+                          from messages m
+                          join conversations c on c.id = m.conversation_id
+                         where m.request_id::text = split_part(l.ref_id, ':', 1)
+                         order by m.created_at
+                         limit 1)
+                end as detail
+         from token_ledger l
+        where l.account_id = $1 and ($2::bigint is null or l.id < $2)
+        order by l.id desc
         limit $3`,
             [accountId, before, limit + 1]
         );
@@ -150,6 +170,7 @@ export class TokensService {
                 reason: r.reason,
                 balanceAfter: r.balance_after,
                 createdAt: new Date(r.created_at).toISOString(),
+                detail: r.detail,
             })),
             nextCursor:
                 rows.length > limit
