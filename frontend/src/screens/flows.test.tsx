@@ -454,7 +454,10 @@ describe('Prep', () => {
         );
         const user = userEvent.setup();
         renderAt('/prep');
-        await user.click(await screen.findByRole('button', { name: 'Start quiz' }));
+        await user.click(await screen.findByRole('button', { name: 'Practise' }));
+        await user.click(await screen.findByRole('button', { name: /^Items/ }));
+        await user.click(await screen.findByRole('radio', { name: '5' }));
+        await user.click(screen.getByRole('button', { name: /^Quiz/ }));
         await user.click(
             await screen.findByRole('radio', { name: /Golgi apparatus/ }, { timeout: 5000 })
         );
@@ -464,6 +467,8 @@ describe('Prep', () => {
         expect(
             screen.getByText(/You chose Golgi apparatus\. The answer is Mitochondrion/)
         ).toBeTruthy();
+        const created = fake.calls.find((c) => c.method === 'POST' && c.path === '/v1/sessions');
+        expect(created?.body).toMatchObject({ mode: 'quiz', fileIds: ['f1'], questionCount: 5 });
         const answer = fake.calls.find((c) => c.path === '/v1/sessions/s1/answers');
         expect(answer?.body).toMatchObject({ itemId: 0, answer: 'Golgi apparatus' });
         expect(answer?.headers.get('Idempotency-Key')).toMatch(/.+/);

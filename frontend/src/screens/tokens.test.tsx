@@ -49,6 +49,7 @@ describe('Tokens', () => {
                         reason: 'prep_charge',
                         balanceAfter: 24,
                         createdAt: '2026-11-20T10:00:00Z',
+                        detail: '10 questions, Chemistry.pdf',
                     },
                     {
                         id: 1,
@@ -56,6 +57,7 @@ describe('Tokens', () => {
                         reason: 'streak_reward',
                         balanceAfter: 25,
                         createdAt: '2026-11-19T10:00:00Z',
+                        detail: null,
                     },
                 ],
                 nextCursor: null,
@@ -63,10 +65,39 @@ describe('Tokens', () => {
         );
         renderAt('/tokens');
         expect(await screen.findByText('24')).toBeInTheDocument();
-        expect(screen.getByText('Prep session, any length')).toBeInTheDocument();
+        expect(screen.getByText('Prep, per question (at least 3)')).toBeInTheDocument();
         expect(await screen.findByText('Streak reward')).toBeInTheDocument();
         expect(screen.getByText('+10')).toBeInTheDocument();
         expect(screen.getByText('−1')).toBeInTheDocument();
+        expect(screen.getByText(/10 questions, Chemistry\.pdf ·/)).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull();
+    });
+
+    it('shows 5 entries, then 25 after Show more', async () => {
+        const fake = installFakeBackend();
+        const limits: number[] = [];
+        fake.on('GET', '/v1/tokens/ledger', (req) => {
+            const limit = Number(new URL(req.url).searchParams.get('limit'));
+            limits.push(limit);
+            return json({
+                items: Array.from({ length: limit }, (_, i) => ({
+                    id: 100 - i,
+                    delta: -1,
+                    reason: 'chat_charge',
+                    balanceAfter: 10,
+                    createdAt: '2026-11-20T10:00:00Z',
+                    detail: `Chat ${i}`,
+                })),
+                nextCursor: 'more',
+            });
+        });
+        renderAt('/tokens');
+        await screen.findByText(/Chat 4 ·/);
+        expect(screen.getAllByText('Ask Florence')).toHaveLength(5);
+        await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+        await screen.findByText(/Chat 24 ·/);
+        expect(screen.getAllByText('Ask Florence')).toHaveLength(25);
+        expect(limits).toEqual([5, 25]);
     });
 
     it('starts a Paystack payment and asks for an email when the account has none', async () => {
@@ -99,7 +130,9 @@ describe('Tokens', () => {
         );
         const sent = fake.calls.filter((c) => c.path === '/v1/tokens/purchases');
         expect(sent[1].body).toEqual({ bundleId: 'b_2500', email: 'ada@example.com' });
-        expect(sent[1].headers.get('Idempotency-Key')).toMatch(/.+/);
+        expect(sent[1].headers.get('Idempotency-Key')).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+        );
     });
 
     it('confirms a payment on return from Paystack', async () => {
@@ -137,8 +170,11 @@ describe('Tokens', () => {
         );
         const user = userEvent.setup();
         renderAt('/prep');
-        await user.click(await screen.findByRole('button', { name: 'Start quiz' }));
+        await user.click(await screen.findByRole('button', { name: 'Practise' }));
+        expect(await screen.findByText(/Uses 10 tokens, 1 per question/)).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: /^Quiz/ }));
         const sheet = await screen.findByRole('dialog', { name: 'You’re out of tokens' });
+        expect(within(sheet).getByText(/needs 10 tokens and you have 0/)).toBeInTheDocument();
         await user.click(within(sheet).getByRole('button', { name: 'Top up' }));
         expect(await screen.findByRole('heading', { name: 'Get more tokens' })).toBeInTheDocument();
     });

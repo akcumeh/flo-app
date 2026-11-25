@@ -103,7 +103,11 @@ export function AskScreen() {
     const [actionsFor, setActionsFor] = useState<Turn | null>(null);
     const [menu, setMenu] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
-    const [photo, setPhoto] = useState<{ id: string; name: string } | null>(null);
+    const [photo, setPhoto] = useState<{
+        id: string;
+        name: string;
+        kind: 'photo' | 'file';
+    } | null>(null);
     const [addingPhoto, setAddingPhoto] = useState(false);
     const busy = useRef(false);
     const conversationId = useRef<string | null>(routeId ?? null);
@@ -111,6 +115,7 @@ export function AskScreen() {
     const handled = useRef(false);
     const endRef = useRef<HTMLDivElement>(null);
     const photoInput = useRef<HTMLInputElement>(null);
+    const fileInput = useRef<HTMLInputElement>(null);
 
     const files = useQuery({ queryKey: ['files'], queryFn: () => api.listFiles() });
     const conversations = useQuery({ queryKey: ['conversations'], queryFn: listConversations });
@@ -255,16 +260,7 @@ export function AskScreen() {
             navigate('/library/add');
             return;
         }
-        try {
-            const session = await api.createPrepSession(ids, 10);
-            navigate(`/prep/${session.id}`);
-        } catch (err) {
-            if (isOutOfTokens(err)) {
-                outOfTokens({ what: 'A prep session', cost: 1 });
-                return;
-            }
-            toast(err instanceof ApiError ? err.message : 'Could not start a session.');
-        }
+        navigate(`/prep/new?${ids.map((f) => `file=${encodeURIComponent(f)}`).join('&')}`);
     };
 
     const copy = async (turn: Turn) => {
@@ -282,9 +278,14 @@ export function AskScreen() {
         setAddingPhoto(true);
         try {
             const stored = await uploadFiles([file]);
-            setPhoto({ id: stored.id, name: 'Photo added' });
+            const isPhoto = file.type.startsWith('image/');
+            setPhoto({
+                id: stored.id,
+                name: isPhoto ? 'Photo added' : file.name,
+                kind: isPhoto ? 'photo' : 'file',
+            });
         } catch (err) {
-            toast(err instanceof ApiError ? err.message : 'Could not add that photo.');
+            toast(err instanceof ApiError ? err.message : 'Could not add that file.');
         } finally {
             setAddingPhoto(false);
         }
@@ -397,9 +398,12 @@ export function AskScreen() {
             <Dock>
                 <Composer
                     onSend={(t) => void send(t)}
-                    onCamera={() => photoInput.current?.click()}
+                    onAttach={(kind) =>
+                        (kind === 'camera' ? photoInput : fileInput).current?.click()
+                    }
                     scope={hasNotes ? 'From my notes' : null}
-                    attachment={addingPhoto ? 'Adding photo…' : photo ? photo.name : null}
+                    attachment={addingPhoto ? 'Adding…' : photo ? photo.name : null}
+                    attachmentKind={photo?.kind ?? 'photo'}
                     onClearAttachment={photo ? () => setPhoto(null) : undefined}
                     disabled={addingPhoto}
                 />
@@ -411,6 +415,17 @@ export function AskScreen() {
                 capture="environment"
                 hidden
                 data-testid="ask-photo"
+                onChange={(e) => {
+                    void addPhoto(e.target.files);
+                    e.target.value = '';
+                }}
+            />
+            <input
+                ref={fileInput}
+                type="file"
+                accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+                hidden
+                data-testid="ask-file"
                 onChange={(e) => {
                     void addPhoto(e.target.files);
                     e.target.value = '';

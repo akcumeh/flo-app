@@ -13,6 +13,7 @@ import { LibraryScreen } from './screens/LibraryScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { PrepHomeScreen } from './screens/PrepHomeScreen';
 import { PrepSessionScreen } from './screens/PrepSessionScreen';
+import { PrepSetupScreen } from './screens/PrepSetupScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { ProgressScreen } from './screens/ProgressScreen';
 import { SessionExpiredScreen } from './screens/SessionExpiredScreen';
@@ -88,6 +89,7 @@ export function App() {
                     <Route path="/ask/saved" element={<SavedAnswersScreen />} />
                     <Route path="/ask/:conversationId?" element={<AskScreen />} />
                     <Route path="/prep" element={<PrepHomeScreen />} />
+                    <Route path="/prep/new" element={<PrepSetupScreen />} />
                     <Route path="/prep/:id" element={<PrepSessionScreen />} />
                     <Route path="/library" element={<LibraryScreen />} />
                     <Route path="/library/add" element={<AddNotesScreen />} />

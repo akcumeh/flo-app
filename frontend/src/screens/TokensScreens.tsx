@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError, client, idempotencyKey } from '../api';
 import type { components } from '../api/schema';
@@ -17,7 +17,7 @@ type Purchase = components['schemas']['Purchase'];
 const COSTS: Array<{ icon: IconName; label: string; cost: string }> = [
     { icon: 'row-chat', label: 'Ask Florence a question', cost: '1' },
     { icon: 'row-chat', label: 'Ask with a photo or file', cost: '2' },
-    { icon: 'row-cards', label: 'Prep session, any length', cost: '1' },
+    { icon: 'row-cards', label: 'Prep, per question (at least 3)', cost: '1' },
     { icon: 'row-file', label: 'Upload notes', cost: 'Free' },
 ];
 
@@ -39,6 +39,15 @@ const REASON: Record<LedgerEntry['reason'], { icon: IconName; label: string }> =
 
 const naira = (n: number) => `₦${n.toLocaleString('en-NG')}`;
 const signed = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
+const when = (iso: string) =>
+    new Date(iso).toLocaleString('en-NG', {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+const RECENT = 5;
+const MORE = 25;
 
 export function TokensScreen() {
     const navigate = useNavigate();
@@ -47,12 +56,15 @@ export function TokensScreen() {
         queryKey: ['tokens'],
         queryFn: async () => (await client.GET('/v1/tokens')).data!.balance,
     });
+    const [expanded, setExpanded] = useState(false);
+    const limit = expanded ? MORE : RECENT;
     const ledger = useQuery({
-        queryKey: ['ledger'],
+        queryKey: ['ledger', limit],
         queryFn: async () =>
-            (await client.GET('/v1/tokens/ledger', { params: { query: { limit: 5 } } })).data!
-                .items,
+            (await client.GET('/v1/tokens/ledger', { params: { query: { limit } } })).data!,
+        placeholderData: (prev) => prev,
     });
+    const entries = ledger.data?.items ?? [];
 
     useEffect(() => {
         if (balance.data !== undefined) setBalance(balance.data);
@@ -92,18 +104,31 @@ export function TokensScreen() {
                     <ErrorState onRetry={() => void ledger.refetch()} />
                 ) : ledger.isPending ? (
                     <Skeleton height={112} radius={24} />
-                ) : ledger.data.length === 0 ? (
+                ) : entries.length === 0 ? (
                     <p className={s.caption}>Nothing yet.</p>
                 ) : (
-                    <ul className={s.group}>
-                        {ledger.data.map((e) => (
-                            <li key={e.id} className={s.row}>
-                                <Icon name={REASON[e.reason].icon} className={s.rowIcon} />
-                                <span className={s.rowText}>{REASON[e.reason].label}</span>
-                                <span className={s.rowValue}>{signed(e.delta)}</span>
-                            </li>
-                        ))}
-                    </ul>
+                    <>
+                        <ul className={s.group}>
+                            {entries.map((e) => (
+                                <li key={e.id} className={`${s.row} ${s.entry}`}>
+                                    <Icon name={REASON[e.reason].icon} className={s.rowIcon} />
+                                    <span className={s.rowText}>
+                                        {REASON[e.reason].label}
+                                        <span className={s.rowSub}>
+                                            {e.detail ? `${e.detail} · ` : ''}
+                                            {when(e.createdAt)}
+                                        </span>
+                                    </span>
+                                    <span className={s.rowValue}>{signed(e.delta)}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        {!expanded && ledger.data?.nextCursor ? (
+                            <Button variant="link" block onClick={() => setExpanded(true)}>
+                                Show more
+                            </Button>
+                        ) : null}
+                    </>
                 )}
             </main>
             <div className={s.spacer} />
@@ -133,7 +158,7 @@ export function TopUpScreen() {
     const [needEmail, setNeedEmail] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [key] = useState(() => idempotencyKey());
+    const keys = useRef(new Map<string, string>());
 
     const items = bundles.data ?? [];
     const best = bestValue(items);
@@ -143,9 +168,12 @@ export function TopUpScreen() {
         if (!selected) return;
         setBusy(true);
         setError(null);
+        const slot = `${selected}:${needEmail ? email.trim() : ''}`;
+        const key = keys.current.get(slot) ?? idempotencyKey();
+        keys.current.set(slot, key);
         try {
             const res = await client.POST('/v1/tokens/purchases', {
-                params: { header: { 'Idempotency-Key': `${key}-${selected}` } },
+                params: { header: { 'Idempotency-Key': key } },
                 body: needEmail
                     ? { bundleId: selected, email: email.trim() }
                     : { bundleId: selected },

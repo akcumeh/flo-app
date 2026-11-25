@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/v1/health": {
+    '/v1/health': {
         parameters: {
             query?: never;
             header?: never;
@@ -15,7 +15,7 @@ export interface paths {
          * Liveness check
          * @description Returns 200 when the process can serve requests. Does not touch the database.
          */
-        get: operations["getHealth"];
+        get: operations['getHealth'];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/telegram/oidc": {
+    '/v1/auth/telegram/oidc': {
         parameters: {
             query?: never;
             header?: never;
@@ -50,14 +50,14 @@ export interface paths {
          *
          *     With a bearer token the identity is linked instead of signing in.
          */
-        post: operations["signInWithTelegramOidc"];
+        post: operations['signInWithTelegramOidc'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/challenges": {
+    '/v1/auth/challenges': {
         parameters: {
             query?: never;
             header?: never;
@@ -78,14 +78,14 @@ export interface paths {
          *
          *     `intent: link` requires a bearer token.
          */
-        post: operations["createAuthChallenge"];
+        post: operations['createAuthChallenge'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/challenges/{challengeId}": {
+    '/v1/auth/challenges/{challengeId}': {
         parameters: {
             query?: never;
             header?: never;
@@ -96,7 +96,7 @@ export interface paths {
          * Poll a challenge
          * @description Returns only the status. Poll every 2 seconds. The session is never returned here.
          */
-        get: operations["getAuthChallengeStatus"];
+        get: operations['getAuthChallengeStatus'];
         put?: never;
         post?: never;
         delete?: never;
@@ -105,7 +105,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/challenges/{challengeId}/redeem": {
+    '/v1/auth/challenges/{challengeId}/redeem': {
         parameters: {
             query?: never;
             header?: never;
@@ -122,14 +122,14 @@ export interface paths {
          *     With a bearer token and a challenge created with `intent: link`, the identity is attached
          *     to the account and the response still carries a fresh session.
          */
-        post: operations["redeemAuthChallenge"];
+        post: operations['redeemAuthChallenge'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/email/start": {
+    '/v1/auth/email/start': {
         parameters: {
             query?: never;
             header?: never;
@@ -143,14 +143,14 @@ export interface paths {
          * @description Always answers 202, whether or not the address has an account, so the endpoint cannot be
          *     used to list users. Limits: 3 sends per hour per address, 10 per hour per IP.
          */
-        post: operations["startEmailAuth"];
+        post: operations['startEmailAuth'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/email/verify": {
+    '/v1/auth/email/verify': {
         parameters: {
             query?: never;
             header?: never;
@@ -163,14 +163,14 @@ export interface paths {
          * Confirm the 6-digit code
          * @description Five wrong attempts lock the code. The user must request a new one.
          */
-        post: operations["verifyEmailAuth"];
+        post: operations['verifyEmailAuth'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/whatsapp/start": {
+    '/v1/auth/whatsapp/start': {
         parameters: {
             query?: never;
             header?: never;
@@ -191,14 +191,14 @@ export interface paths {
          *     message (for example, the number has no WhatsApp account), and 503 `channel_unavailable`
          *     when the WhatsApp Cloud API settings are missing in production.
          */
-        post: operations["startWhatsAppAuth"];
+        post: operations['startWhatsAppAuth'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/whatsapp/verify": {
+    '/v1/auth/whatsapp/verify': {
         parameters: {
             query?: never;
             header?: never;
@@ -211,14 +211,14 @@ export interface paths {
          * Confirm the WhatsApp code
          * @description Five wrong attempts lock the code. With a bearer token the number is linked instead.
          */
-        post: operations["verifyWhatsAppAuth"];
+        post: operations['verifyWhatsAppAuth'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/google": {
+    '/v1/auth/google': {
         parameters: {
             query?: never;
             header?: never;
@@ -234,14 +234,14 @@ export interface paths {
          *
          *     Answers 503 `channel_unavailable` until `GOOGLE_CLIENT_ID` is set.
          */
-        post: operations["signInWithGoogle"];
+        post: operations['signInWithGoogle'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/refresh": {
+    '/v1/auth/refresh': {
         parameters: {
             query?: never;
             header?: never;
@@ -255,14 +255,14 @@ export interface paths {
          * @description Reads the `flo_rt` cookie. The old refresh token stops working. Presenting an already
          *     rotated token revokes the whole token family and answers 401 `refresh_reuse_detected`.
          */
-        post: operations["refreshSession"];
+        post: operations['refreshSession'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/auth/logout": {
+    '/v1/auth/logout': {
         parameters: {
             query?: never;
             header?: never;
@@ -272,14 +272,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Revoke the current refresh token family */
-        post: operations["logout"];
+        post: operations['logout'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/me": {
+    '/v1/me': {
         parameters: {
             query?: never;
             header?: never;
@@ -287,7 +287,7 @@ export interface paths {
             cookie?: never;
         };
         /** The signed-in account */
-        get: operations["getMe"];
+        get: operations['getMe'];
         put?: never;
         post?: never;
         delete?: never;
@@ -297,10 +297,10 @@ export interface paths {
          * Change display name or username
          * @description Username is optional and unique. Send `null` to clear it. It is a handle for display, never used to sign in.
          */
-        patch: operations["updateMe"];
+        patch: operations['updateMe'];
         trace?: never;
     };
-    "/v1/me/identities/{identityId}": {
+    '/v1/me/identities/{identityId}': {
         parameters: {
             query?: never;
             header?: never;
@@ -315,13 +315,13 @@ export interface paths {
          * @description Refused with 409 `last_identity` if it is the only one. Unlinking does not touch the
          *     welcome grant guard, so relinking cannot mint tokens again.
          */
-        delete: operations["unlinkIdentity"];
+        delete: operations['unlinkIdentity'];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/me/merge": {
+    '/v1/me/merge': {
         parameters: {
             query?: never;
             header?: never;
@@ -337,14 +337,14 @@ export interface paths {
          *     `merge_out` ledger rows. Conversations, files, transactions, prep sessions and push
          *     subscriptions move to the survivor. The whole operation is one transaction.
          */
-        post: operations["mergeAccounts"];
+        post: operations['mergeAccounts'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/me/student/verify/start": {
+    '/v1/me/student/verify/start': {
         parameters: {
             query?: never;
             header?: never;
@@ -361,14 +361,14 @@ export interface paths {
          *     grants a one-time `student_bonus` of 10 tokens. A yearly renewal keeps the verified badge
          *     and grants nothing.
          */
-        post: operations["startStudentVerification"];
+        post: operations['startStudentVerification'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/me/student/verify/confirm": {
+    '/v1/me/student/verify/confirm': {
         parameters: {
             query?: never;
             header?: never;
@@ -378,14 +378,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Confirm the school email code */
-        post: operations["confirmStudentVerification"];
+        post: operations['confirmStudentVerification'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/me/notification-preferences": {
+    '/v1/me/notification-preferences': {
         parameters: {
             query?: never;
             header?: never;
@@ -393,14 +393,14 @@ export interface paths {
             cookie?: never;
         };
         /** Where and when Florence nudges you */
-        get: operations["getNotificationPreferences"];
+        get: operations['getNotificationPreferences'];
         /**
          * Replace notification preferences
          * @description Choosing `telegram` or `whatsapp` requires a linked identity of that kind (422
          *     `channel_not_linked` otherwise). WhatsApp messages outside the 24-hour window need an
          *     approved template and cost money, so default web-only accounts to `web_push`.
          */
-        put: operations["setNotificationPreferences"];
+        put: operations['setNotificationPreferences'];
         post?: never;
         delete?: never;
         options?: never;
@@ -408,7 +408,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/tokens": {
+    '/v1/tokens': {
         parameters: {
             query?: never;
             header?: never;
@@ -419,7 +419,7 @@ export interface paths {
          * Current balance
          * @description The same number as `tokenBalance` on the account. Cheap enough to poll after a purchase.
          */
-        get: operations["getTokenBalance"];
+        get: operations['getTokenBalance'];
         put?: never;
         post?: never;
         delete?: never;
@@ -428,7 +428,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/tokens/ledger": {
+    '/v1/tokens/ledger': {
         parameters: {
             query?: never;
             header?: never;
@@ -436,7 +436,7 @@ export interface paths {
             cookie?: never;
         };
         /** Every grant, charge and refund, newest first */
-        get: operations["listLedger"];
+        get: operations['listLedger'];
         put?: never;
         post?: never;
         delete?: never;
@@ -445,7 +445,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/tokens/bundles": {
+    '/v1/tokens/bundles': {
         parameters: {
             query?: never;
             header?: never;
@@ -453,7 +453,7 @@ export interface paths {
             cookie?: never;
         };
         /** Token bundles for sale */
-        get: operations["listBundles"];
+        get: operations['listBundles'];
         put?: never;
         post?: never;
         delete?: never;
@@ -462,7 +462,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/tokens/purchases": {
+    '/v1/tokens/purchases': {
         parameters: {
             query?: never;
             header?: never;
@@ -476,14 +476,14 @@ export interface paths {
          * @description Returns a Paystack authorization URL. Tokens arrive through the Paystack webhook, never
          *     through the client. A retry with the same `Idempotency-Key` returns the same purchase.
          */
-        post: operations["createPurchase"];
+        post: operations['createPurchase'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/tokens/purchases/{reference}": {
+    '/v1/tokens/purchases/{reference}': {
         parameters: {
             query?: never;
             header?: never;
@@ -491,7 +491,7 @@ export interface paths {
             cookie?: never;
         };
         /** Purchase status */
-        get: operations["getPurchase"];
+        get: operations['getPurchase'];
         put?: never;
         post?: never;
         delete?: never;
@@ -500,7 +500,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/conversations": {
+    '/v1/conversations': {
         parameters: {
             query?: never;
             header?: never;
@@ -512,17 +512,17 @@ export interface paths {
          * @description Ordered by the last message. Conversations with no messages are left out. An untitled
          *     conversation takes its title from the first question.
          */
-        get: operations["listConversations"];
+        get: operations['listConversations'];
         put?: never;
         /** Start an empty conversation */
-        post: operations["createConversation"];
+        post: operations['createConversation'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/conversations/{conversationId}": {
+    '/v1/conversations/{conversationId}': {
         parameters: {
             query?: never;
             header?: never;
@@ -536,14 +536,14 @@ export interface paths {
          * Delete a conversation and its messages
          * @description Library files are not deleted.
          */
-        delete: operations["deleteConversation"];
+        delete: operations['deleteConversation'];
         options?: never;
         head?: never;
         /** Rename a conversation */
-        patch: operations["renameConversation"];
+        patch: operations['renameConversation'];
         trace?: never;
     };
-    "/v1/conversations/{conversationId}/messages": {
+    '/v1/conversations/{conversationId}/messages': {
         parameters: {
             query?: never;
             header?: never;
@@ -551,7 +551,7 @@ export interface paths {
             cookie?: never;
         };
         /** Messages in a conversation, oldest first */
-        get: operations["listMessages"];
+        get: operations['listMessages'];
         put?: never;
         /**
          * Send a message and stream Florence's reply
@@ -579,14 +579,14 @@ export interface paths {
          *     Replaying a request with the same `Idempotency-Key` returns the stored result as a
          *     single non-streamed JSON `Message` (200, `application/json`) and does not charge again.
          */
-        post: operations["sendMessage"];
+        post: operations['sendMessage'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/sessions": {
+    '/v1/sessions': {
         parameters: {
             query?: never;
             header?: never;
@@ -597,30 +597,32 @@ export interface paths {
          * Past and open sessions, newest first
          * @description Feeds Session history (E04). Filter by mode or status.
          */
-        get: operations["listSessions"];
+        get: operations['listSessions'];
         put?: never;
         /**
          * Start a study session from library material
          * @description Answers 202 with `status: generating`. Poll the session until it is `active`. One open
          *     session per account: starting another closes the first.
          *
-         *     A session costs 1 token whatever its length, charged here, at start, with the ledger key
-         *     `session:<id>`. A balance of 0 answers 402. The token is refunded once, through the
-         *     ledger, if generation fails or the student leaves with zero answers.
+         *     A session costs 1 token per question, charged here, at start, for `questionCount`, with
+         *     the ledger key `session:<id>`. A balance below `questionCount` answers 402. Generation keeps
+         *     asking the model until it has written exactly `questionCount` questions. If it still
+         *     cannot, the session ends as `failed` and the whole cost is refunded once, through the
+         *     ledger. Nothing is refunded when the student leaves, finishes or lets the session expire,
+         *     whether or not they answered anything.
          *
-         *     A session needs at least 2 items. `409 not_enough_material` when the material cannot
-         *     yield 2, and nothing is charged. If generation later produces fewer than 2, the session
-         *     ends as `failed` and the token is refunded. `422 mode_not_possible` when the material cannot support
+         *     A session needs at least 3 items. `409 not_enough_material` when the material cannot
+         *     yield 3, and nothing is charged. `422 mode_not_possible` when the material cannot support
          *     the mode (screen M14), for example flashcards from a file with no readable text.
          */
-        post: operations["createSession"];
+        post: operations['createSession'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/sessions/{sessionId}": {
+    '/v1/sessions/{sessionId}': {
         parameters: {
             query?: never;
             header?: never;
@@ -632,21 +634,21 @@ export interface paths {
          * @description Items never include the correct answer. It arrives with each verdict. Flashcard items carry
          *     their `back` text because the student flips the card themselves.
          */
-        get: operations["getSession"];
+        get: operations['getSession'];
         put?: never;
         post?: never;
         /**
          * Leave a session early
          * @description Releases any files held for the session. Answers already given stay counted for the study
-         *     day. Leaving with zero answers refunds the session's 1 token, once.
+         *     day. Leaving does not refund the session's cost.
          */
-        delete: operations["exitSession"];
+        delete: operations['exitSession'];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/sessions/{sessionId}/mode": {
+    '/v1/sessions/{sessionId}/mode': {
         parameters: {
             query?: never;
             header?: never;
@@ -664,10 +666,10 @@ export interface paths {
          * @description Keeps the same material and the answers already given. Remaining items are rebuilt in the
          *     new mode. Switching charges nothing. Screen M03. `422 mode_not_possible` as on create.
          */
-        patch: operations["switchSessionMode"];
+        patch: operations['switchSessionMode'];
         trace?: never;
     };
-    "/v1/sessions/{sessionId}/answers": {
+    '/v1/sessions/{sessionId}/answers': {
         parameters: {
             query?: never;
             header?: never;
@@ -689,14 +691,14 @@ export interface paths {
          *
          *     A retry with the same `Idempotency-Key` returns the stored verdict.
          */
-        post: operations["submitAnswer"];
+        post: operations['submitAnswer'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/sessions/{sessionId}/complete": {
+    '/v1/sessions/{sessionId}/complete': {
         parameters: {
             query?: never;
             header?: never;
@@ -707,21 +709,21 @@ export interface paths {
         put?: never;
         /**
          * Finish the session
-         * @description Charges nothing: the session's 1 token was charged at start. A session of at least 2
+         * @description Charges nothing: the session's cost was charged at start. A session of at least 2
          *     items with every item answered makes today a study day. The result carries the streak
          *     effect. A second call returns the same result.
          *
          *     When the session lifts the streak to a multiple of 7, `streakReward` carries the +10 tokens
          *     already written to the ledger.
          */
-        post: operations["completeSession"];
+        post: operations['completeSession'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/sessions/{sessionId}/mistakes": {
+    '/v1/sessions/{sessionId}/mistakes': {
         parameters: {
             query?: never;
             header?: never;
@@ -732,7 +734,7 @@ export interface paths {
          * Items the student got wrong or skipped
          * @description Review mistakes, screen C26. Includes the stored verdict for each.
          */
-        get: operations["listMistakes"];
+        get: operations['listMistakes'];
         put?: never;
         post?: never;
         delete?: never;
@@ -741,7 +743,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/sessions/{sessionId}/retry": {
+    '/v1/sessions/{sessionId}/retry': {
         parameters: {
             query?: never;
             header?: never;
@@ -753,17 +755,17 @@ export interface paths {
         /**
          * Start a new session from the items missed here
          * @description Retry wrong questions, screen C27. Same mode unless the student picks another. The retry is
-         *     a new session and costs 1 token at start, refunded on the same rules as `createSession`.
-         *     `409 not_enough_material` when fewer than 2 items were missed.
+         *     a new session and costs 1 token per missed item at start, refunded on the same rules as
+         *     `createSession`. `409 not_enough_material` when fewer than 3 items were missed.
          */
-        post: operations["retryWrongItems"];
+        post: operations['retryWrongItems'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/sessions/{sessionId}/share-image": {
+    '/v1/sessions/{sessionId}/share-image': {
         parameters: {
             query?: never;
             header?: never;
@@ -774,7 +776,7 @@ export interface paths {
          * Shareable result card
          * @description Screen E05. A 1080 by 1350 PNG. The score is hidden unless `showScore=true`.
          */
-        get: operations["getSessionShareImage"];
+        get: operations['getSessionShareImage'];
         put?: never;
         post?: never;
         delete?: never;
@@ -783,7 +785,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/files": {
+    '/v1/files': {
         parameters: {
             query?: never;
             header?: never;
@@ -791,22 +793,22 @@ export interface paths {
             cookie?: never;
         };
         /** Saved files */
-        get: operations["listFiles"];
+        get: operations['listFiles'];
         put?: never;
         /**
          * Save a file
-         * @description A PDF, a voice note, or one or more page images, at most 20 MB in total (the limit the Telegram path already enforces). Several page images from the camera (C04) become one material. Saving is free. Reading the material continues in the background: poll `getFile` until `status` is `ready` (C05 to C07) or `failed` (C08).
+         * @description A PDF, a Word file (.docx, read as text with Word's own page breaks), a voice note, or one or more page images, at most 20 MB in total (the limit the Telegram path already enforces). Several page images from the camera (C04) become one material. Saving is free. Reading the material continues in the background: poll `getFile` until `status` is `ready` (C05 to C07) or `failed` (C08).
          *     A name that already exists gets `-2` appended. The 21st file answers 409 `library_full`.
          *     Files are mirrored to the model provider lazily, on first use in chat or prep.
          */
-        post: operations["uploadFile"];
+        post: operations['uploadFile'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/files/{fileId}": {
+    '/v1/files/{fileId}': {
         parameters: {
             query?: never;
             header?: never;
@@ -817,20 +819,20 @@ export interface paths {
          * One material with its reading status and topics
          * @description Screens C05 to C08 and C10.
          */
-        get: operations["getFile"];
+        get: operations['getFile'];
         put?: never;
         post?: never;
         /**
          * Delete a saved file
          * @description Also deletes the model-provider mirror if one exists. Conversations that cited the file keep their text.
          */
-        delete: operations["deleteFile"];
+        delete: operations['deleteFile'];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/files/{fileId}/content": {
+    '/v1/files/{fileId}/content': {
         parameters: {
             query?: never;
             header?: never;
@@ -841,7 +843,7 @@ export interface paths {
          * Download a saved file
          * @description Redirects to a short-lived signed URL. Used by the Sources panel to open a cited page.
          */
-        get: operations["getFileContent"];
+        get: operations['getFileContent'];
         put?: never;
         post?: never;
         delete?: never;
@@ -850,7 +852,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/push/vapid-key": {
+    '/v1/push/vapid-key': {
         parameters: {
             query?: never;
             header?: never;
@@ -858,7 +860,7 @@ export interface paths {
             cookie?: never;
         };
         /** Public VAPID key for `pushManager.subscribe` */
-        get: operations["getVapidKey"];
+        get: operations['getVapidKey'];
         put?: never;
         post?: never;
         delete?: never;
@@ -867,7 +869,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/push/subscriptions": {
+    '/v1/push/subscriptions': {
         parameters: {
             query?: never;
             header?: never;
@@ -882,14 +884,14 @@ export interface paths {
          *     installed to the Home Screen (iOS 16.4 or later). Re-posting the same `endpoint` updates
          *     the existing row.
          */
-        post: operations["createPushSubscription"];
+        post: operations['createPushSubscription'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/push/subscriptions/{subscriptionId}": {
+    '/v1/push/subscriptions/{subscriptionId}': {
         parameters: {
             query?: never;
             header?: never;
@@ -900,13 +902,13 @@ export interface paths {
         put?: never;
         post?: never;
         /** Remove a Web Push subscription */
-        delete: operations["deletePushSubscription"];
+        delete: operations['deletePushSubscription'];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/home": {
+    '/v1/home': {
         parameters: {
             query?: never;
             header?: never;
@@ -918,7 +920,7 @@ export interface paths {
          * @description Feeds B01 to B04: streak pill, rank tile, Wrapped teaser, exam countdown, a session to
          *     resume, and which empty state applies.
          */
-        get: operations["getHome"];
+        get: operations['getHome'];
         put?: never;
         post?: never;
         delete?: never;
@@ -927,7 +929,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/progress": {
+    '/v1/progress': {
         parameters: {
             query?: never;
             header?: never;
@@ -938,7 +940,7 @@ export interface paths {
          * Progress overview
          * @description Screen E01. Study days, sessions, accuracy and mastery per course.
          */
-        get: operations["getProgress"];
+        get: operations['getProgress'];
         put?: never;
         post?: never;
         delete?: never;
@@ -947,7 +949,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/progress/courses/{courseId}": {
+    '/v1/progress/courses/{courseId}': {
         parameters: {
             query?: never;
             header?: never;
@@ -958,7 +960,7 @@ export interface paths {
          * Mastery for one course
          * @description Screen E02. Topics with mastery and how many answers it rests on.
          */
-        get: operations["getCourseMastery"];
+        get: operations['getCourseMastery'];
         put?: never;
         post?: never;
         delete?: never;
@@ -967,7 +969,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/facts/today": {
+    '/v1/facts/today': {
         parameters: {
             query?: never;
             header?: never;
@@ -978,7 +980,7 @@ export interface paths {
          * Today's Fact of the Day
          * @description Screen B05. The hidden-message mechanic is a client concern. This returns the text.
          */
-        get: operations["getFactOfTheDay"];
+        get: operations['getFactOfTheDay'];
         put?: never;
         post?: never;
         delete?: never;
@@ -987,7 +989,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/streak": {
+    '/v1/streak': {
         parameters: {
             query?: never;
             header?: never;
@@ -1014,7 +1016,7 @@ export interface paths {
          *     - Each time the streak reaches a multiple of 7, a `streak_reward` of 10 tokens is written
          *       to the ledger with the key `streak7:<account>:<study_day>`.
          */
-        get: operations["getStreak"];
+        get: operations['getStreak'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1023,7 +1025,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/leaderboard": {
+    '/v1/leaderboard': {
         parameters: {
             query?: never;
             header?: never;
@@ -1041,7 +1043,7 @@ export interface paths {
          *     Skeleton in 0.3.0: every board answers `status: not_open` with empty `entries` and a null
          *     `you.rank`. No ranking is computed yet.
          */
-        get: operations["getLeaderboard"];
+        get: operations['getLeaderboard'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1050,7 +1052,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/leaderboard/optin": {
+    '/v1/leaderboard/optin': {
         parameters: {
             query?: never;
             header?: never;
@@ -1064,7 +1066,7 @@ export interface paths {
          *     blocklist. A name that matches the blocklist answers 422 `display_name_rejected` and is not
          *     stored. The flag and name are stored in 0.3.0 even though boards are not built yet.
          */
-        put: operations["setLeaderboardOptIn"];
+        put: operations['setLeaderboardOptIn'];
         post?: never;
         delete?: never;
         options?: never;
@@ -1072,7 +1074,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/leaderboard/weekly-results": {
+    '/v1/leaderboard/weekly-results': {
         parameters: {
             query?: never;
             header?: never;
@@ -1084,7 +1086,7 @@ export interface paths {
          * @description Screen L06, shown on Monday. One entry per board the student was on for the week that just
          *     ended. Skeleton in 0.3.0: always an empty list.
          */
-        get: operations["getWeeklyResults"];
+        get: operations['getWeeklyResults'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1093,7 +1095,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/wrapped": {
+    '/v1/wrapped': {
         parameters: {
             query?: never;
             header?: never;
@@ -1109,7 +1111,7 @@ export interface paths {
          *     When a recap is not ready the call answers 409 `wrapped_not_ready` (screen W11). Skeleton
          *     in 0.3.0: no recap is built, so every period answers 409.
          */
-        get: operations["getWrapped"];
+        get: operations['getWrapped'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1118,7 +1120,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/wrapped/share-image": {
+    '/v1/wrapped/share-image': {
         parameters: {
             query?: never;
             header?: never;
@@ -1132,7 +1134,7 @@ export interface paths {
          *     (screen W09). Answers 409 `wrapped_not_ready` on the same rule as `getWrapped`, which in
          *     0.3.0 means always.
          */
-        get: operations["getWrappedShareImage"];
+        get: operations['getWrappedShareImage'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1141,7 +1143,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/schools": {
+    '/v1/schools': {
         parameters: {
             query?: never;
             header?: never;
@@ -1152,7 +1154,7 @@ export interface paths {
          * Search the seeded list of schools
          * @description Onboarding step 1 (A07). Schools and their departments are seeded by staff.
          */
-        get: operations["searchSchools"];
+        get: operations['searchSchools'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1161,7 +1163,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/schools/{schoolId}/departments": {
+    '/v1/schools/{schoolId}/departments': {
         parameters: {
             query?: never;
             header?: never;
@@ -1172,7 +1174,7 @@ export interface paths {
          * Departments of a school
          * @description Onboarding step 2 (A08).
          */
-        get: operations["listDepartments"];
+        get: operations['listDepartments'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1181,7 +1183,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/me/profile": {
+    '/v1/me/profile': {
         parameters: {
             query?: never;
             header?: never;
@@ -1193,7 +1195,7 @@ export interface paths {
          * Set school, department, level and exam date
          * @description Onboarding steps 1, 2 and 4 (A07, A08, A10) and Edit school and courses (F02).
          */
-        put: operations["updateProfile"];
+        put: operations['updateProfile'];
         post?: never;
         delete?: never;
         options?: never;
@@ -1201,7 +1203,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/me/courses": {
+    '/v1/me/courses': {
         parameters: {
             query?: never;
             header?: never;
@@ -1209,7 +1211,7 @@ export interface paths {
             cookie?: never;
         };
         /** Courses the student is enrolled in */
-        get: operations["listMyCourses"];
+        get: operations['listMyCourses'];
         put?: never;
         /**
          * Add a course by code
@@ -1217,14 +1219,14 @@ export interface paths {
          *     (uppercase, spaces and dashes removed), so `bio 102` and `BIO102` at one school are the
          *     same course and share a leaderboard. Needs a school on the profile first.
          */
-        post: operations["enrolInCourse"];
+        post: operations['enrolInCourse'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/me/courses/{courseId}": {
+    '/v1/me/courses/{courseId}': {
         parameters: {
             query?: never;
             header?: never;
@@ -1235,20 +1237,20 @@ export interface paths {
          * Course detail with its materials
          * @description Screen C02.
          */
-        get: operations["getCourse"];
+        get: operations['getCourse'];
         put?: never;
         post?: never;
         /**
          * Remove a course from the profile
          * @description Materials stay in the library.
          */
-        delete: operations["leaveCourse"];
+        delete: operations['leaveCourse'];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/guest/sessions": {
+    '/v1/guest/sessions': {
         parameters: {
             query?: never;
             header?: never;
@@ -1264,14 +1266,14 @@ export interface paths {
          *     (`visitorId`) and per IP address over 24 hours. Whichever is used up first wins. No file
          *     uploads.
          */
-        post: operations["createGuestSession"];
+        post: operations['createGuestSession'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/guest/messages": {
+    '/v1/guest/messages': {
         parameters: {
             query?: never;
             header?: never;
@@ -1286,14 +1288,14 @@ export interface paths {
          *     `questionsLeft: 0` and the client shows the save prompt (A03). A third question answers
          *     429 `guest_limit_reached`. Guests are never charged tokens.
          */
-        post: operations["sendGuestMessage"];
+        post: operations['sendGuestMessage'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/guest/claim": {
+    '/v1/guest/claim': {
         parameters: {
             query?: never;
             header?: never;
@@ -1306,14 +1308,14 @@ export interface paths {
          * Keep the guest chat after signing up
          * @description Called right after sign-in from the save prompt (A03). Moves the guest messages into a conversation on the account.
          */
-        post: operations["claimGuestChat"];
+        post: operations['claimGuestChat'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/messages/{messageId}/saved": {
+    '/v1/messages/{messageId}/saved': {
         parameters: {
             query?: never;
             header?: never;
@@ -1325,7 +1327,7 @@ export interface paths {
          * Save or unsave an answer
          * @description Saved answers, screen D09.
          */
-        put: operations["setMessageSaved"];
+        put: operations['setMessageSaved'];
         post?: never;
         delete?: never;
         options?: never;
@@ -1333,7 +1335,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/saved-answers": {
+    '/v1/saved-answers': {
         parameters: {
             query?: never;
             header?: never;
@@ -1341,7 +1343,7 @@ export interface paths {
             cookie?: never;
         };
         /** Saved answers, newest saved first */
-        get: operations["listSavedAnswers"];
+        get: operations['listSavedAnswers'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1350,7 +1352,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/me/referral": {
+    '/v1/me/referral': {
         parameters: {
             query?: never;
             header?: never;
@@ -1362,7 +1364,7 @@ export interface paths {
          * @description Screen F09. When an invited student finishes their first session, the inviter and the
          *     invitee each get a `referral_reward` of 5 tokens, once per invitee.
          */
-        get: operations["getReferral"];
+        get: operations['getReferral'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1371,7 +1373,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/me/export": {
+    '/v1/me/export': {
         parameters: {
             query?: never;
             header?: never;
@@ -1384,14 +1386,14 @@ export interface paths {
          * Ask for a copy of the account's data
          * @description Screen F13. Answers 202. A link arrives by the chosen notification channel.
          */
-        post: operations["requestDataExport"];
+        post: operations['requestDataExport'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/me/delete": {
+    '/v1/me/delete': {
         parameters: {
             query?: never;
             header?: never;
@@ -1405,14 +1407,14 @@ export interface paths {
          * @description Screen F13. Starts a 7 day grace period. Signing in during it cancels the deletion. After
          *     it, identities, conversations, files and sessions are erased and the ledger is anonymised.
          */
-        post: operations["requestAccountDeletion"];
+        post: operations['requestAccountDeletion'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/status": {
+    '/v1/status': {
         parameters: {
             query?: never;
             header?: never;
@@ -1423,7 +1425,7 @@ export interface paths {
          * Maintenance flag and client version gate
          * @description Screens G07 (update available) and G08 (maintenance). Checked on launch and on resume.
          */
-        get: operations["getServiceStatus"];
+        get: operations['getServiceStatus'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1432,7 +1434,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/internal/v1/auth/challenges/claim": {
+    '/internal/v1/auth/challenges/claim': {
         parameters: {
             query?: never;
             header?: never;
@@ -1450,14 +1452,14 @@ export interface paths {
          *
          *     Answers 404 for an unknown or expired code, so bots can reply "that code expired".
          */
-        post: operations["claimAuthChallenge"];
+        post: operations['claimAuthChallenge'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/internal/v1/events": {
+    '/internal/v1/events': {
         parameters: {
             query?: never;
             header?: never;
@@ -1478,14 +1480,14 @@ export interface paths {
          *     nothing. When the event tips today into a study day and the streak reaches a multiple of 7,
          *     the 10 token reward is written to the ledger and returned, so the bot can say so.
          */
-        post: operations["recordBotEvent"];
+        post: operations['recordBotEvent'];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/internal/v1/streak": {
+    '/internal/v1/streak': {
         parameters: {
             query?: never;
             header?: never;
@@ -1496,7 +1498,7 @@ export interface paths {
          * Streak summary for the bots' /streak command
          * @description Replaces the streak stored in the Mongo user document. The bots stop computing streaks themselves.
          */
-        get: operations["getBotStreak"];
+        get: operations['getBotStreak'];
         put?: never;
         post?: never;
         delete?: never;
@@ -1523,7 +1525,7 @@ export interface webhooks {
          *     marked paid and a `purchase` ledger row is written, once, keyed on the reference. Always
          *     answers 200 fast. Paystack retries on anything else.
          */
-        post: operations["receivePaystackEvent"];
+        post: operations['receivePaystackEvent'];
         delete?: never;
         options?: never;
         head?: never;
@@ -1559,13 +1561,14 @@ export interface components {
             detail?: string;
             requestId?: string;
         };
-        MergeConflict: components["schemas"]["Problem"] & {
+        MergeConflict: components['schemas']['Problem'] & {
             /** @description Present only for `identity_belongs_to_other_account`. */
             mergeToken?: string;
             /** Format: date-time */
             mergeTokenExpiresAt?: string;
         };
-        TelegramOidcRequest: components["schemas"]["TelegramOidcCode"] | components["schemas"]["TelegramWidgetAuth"];
+        TelegramOidcRequest:
+            components['schemas']['TelegramOidcCode'] | components['schemas']['TelegramWidgetAuth'];
         TelegramWidgetAuth: {
             id: number;
             first_name: string;
@@ -1586,12 +1589,12 @@ export interface components {
         };
         ChallengeRequest: {
             /** @enum {string} */
-            channel: "telegram" | "whatsapp";
+            channel: 'telegram' | 'whatsapp';
             /**
              * @default signin
              * @enum {string}
              */
-            intent: "signin" | "link";
+            intent: 'signin' | 'link';
         };
         Challenge: {
             challengeId: string;
@@ -1603,7 +1606,7 @@ export interface components {
         };
         ChallengeStatus: {
             /** @enum {string} */
-            status: "pending" | "verified" | "redeemed" | "expired";
+            status: 'pending' | 'verified' | 'redeemed' | 'expired';
             /** Format: date-time */
             expiresAt: string;
         };
@@ -1615,8 +1618,8 @@ export interface components {
              */
             expiresIn: number;
         };
-        AuthSession: components["schemas"]["AccessToken"] & {
-            account: components["schemas"]["Account"];
+        AuthSession: components['schemas']['AccessToken'] & {
+            account: components['schemas']['Account'];
             isNewAccount: boolean;
             /** @description Granted once per account. `granted` is false on every later sign-in. */
             welcomeGrant: {
@@ -1630,9 +1633,9 @@ export interface components {
             displayName: string;
             username: string | null;
             tokenBalance: number;
-            identities: components["schemas"]["Identity"][];
-            student: components["schemas"]["Student"];
-            profile?: components["schemas"]["Profile"];
+            identities: components['schemas']['Identity'][];
+            student: components['schemas']['Student'];
+            profile?: components['schemas']['Profile'];
             /** Format: date-time */
             createdAt: string;
         };
@@ -1640,7 +1643,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            provider: "telegram" | "whatsapp" | "email" | "google";
+            provider: 'telegram' | 'whatsapp' | 'email' | 'google';
             /** @description Safe to show. A handle, or a masked phone or email. */
             display: string;
             /** Format: date-time */
@@ -1648,7 +1651,7 @@ export interface components {
         };
         Student: {
             /** @enum {string} */
-            status: "none" | "verified" | "expired";
+            status: 'none' | 'verified' | 'expired';
             institution?: string;
             /** Format: date-time */
             verifiedAt?: string;
@@ -1657,7 +1660,7 @@ export interface components {
         };
         NotificationPreferences: {
             /** @enum {string} */
-            channel: "web_push" | "telegram" | "whatsapp" | "none";
+            channel: 'web_push' | 'telegram' | 'whatsapp' | 'none';
             /**
              * @description At most one push a day, only if today is not yet a study day. The copy is in English
              *     and never mentions loss ("Keep it going", not "You'll lose").
@@ -1674,15 +1677,30 @@ export interface components {
         };
         LedgerEntry: {
             id: number;
+            /** @description What the entry was for, in a few words. The question count and file for prep, the naira amount for a top up, the conversation title for Ask. Null when there is nothing to add. */
+            detail: string | null;
             delta: number;
             /** @enum {string} */
-            reason: "welcome_grant" | "student_bonus" | "streak_reward" | "purchase" | "chat_charge" | "prep_charge" | "create_charge" | "refund" | "referral_reward" | "merge_in" | "merge_out" | "legacy_import" | "admin_adjust";
+            reason:
+                | 'welcome_grant'
+                | 'student_bonus'
+                | 'streak_reward'
+                | 'purchase'
+                | 'chat_charge'
+                | 'prep_charge'
+                | 'create_charge'
+                | 'refund'
+                | 'referral_reward'
+                | 'merge_in'
+                | 'merge_out'
+                | 'legacy_import'
+                | 'admin_adjust';
             balanceAfter: number;
             /** Format: date-time */
             createdAt: string;
         };
         LedgerPage: {
-            items: components["schemas"]["LedgerEntry"][];
+            items: components['schemas']['LedgerEntry'][];
             nextCursor: string | null;
         };
         Bundle: {
@@ -1693,7 +1711,7 @@ export interface components {
         Purchase: {
             reference: string;
             /** @enum {string} */
-            status: "pending" | "awaiting_transfer" | "success" | "failed" | "expired";
+            status: 'pending' | 'awaiting_transfer' | 'success' | 'failed' | 'expired';
             /** Format: uri */
             authorizationUrl?: string;
             /** @description Present for bank transfers while `status` is `awaiting_transfer` (screen F07). */
@@ -1710,25 +1728,28 @@ export interface components {
             id: string;
             title: string | null;
             /** @enum {string} */
-            mode: "ask" | "prep";
+            mode: 'ask' | 'prep';
             /** Format: date-time */
             lastMessageAt: string | null;
         };
-        SendMessageRequest: {
-            text?: string;
-            /**
-             * Format: uuid
-             * @description An uploaded voice note (D11). It is transcribed and answered as text.
-             */
-            voiceFileId?: string;
-            /** @description Set when asking about a question from a session (C23). */
-            context?: {
-                /** Format: uuid */
-                sessionId: string;
-                itemId: number;
-            };
-            fileIds?: string[];
-        } | unknown | unknown;
+        SendMessageRequest:
+            | {
+                  text?: string;
+                  /**
+                   * Format: uuid
+                   * @description An uploaded voice note (D11). It is transcribed and answered as text.
+                   */
+                  voiceFileId?: string;
+                  /** @description Set when asking about a question from a session (C23). */
+                  context?: {
+                      /** Format: uuid */
+                      sessionId: string;
+                      itemId: number;
+                  };
+                  fileIds?: string[];
+              }
+            | unknown
+            | unknown;
         Citation: {
             /** Format: uuid */
             fileId: string;
@@ -1747,34 +1768,38 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            role: "user" | "assistant";
+            role: 'user' | 'assistant';
             text: string;
-            citations: components["schemas"]["Citation"][];
+            citations: components['schemas']['Citation'][];
             charged: number;
             /** Format: date-time */
             createdAt: string;
         };
         /** @enum {string} */
-        StudyMode: "quiz" | "flashcards" | "fill_blank" | "mock_exam";
+        StudyMode: 'quiz' | 'flashcards' | 'fill_blank' | 'mock_exam';
         CreateSessionRequest: {
-            mode: components["schemas"]["StudyMode"];
+            mode: components['schemas']['StudyMode'];
             fileIds: string[];
             /** @description Limit the session to these topics found in the material. */
             topicIds?: string[];
-            /** @default 10 */
+            /**
+             * @description Also the number of tokens charged.
+             * @default 10
+             */
             questionCount: number;
             /** @description Mock exam only. */
             timeLimitMinutes?: number;
         };
         /** @enum {string} */
-        ItemType: "mcq" | "true_false" | "fill_gap" | "short" | "theory" | "calculation" | "flashcard";
+        ItemType:
+            'mcq' | 'true_false' | 'fill_gap' | 'short' | 'theory' | 'calculation' | 'flashcard';
         /** @enum {string} */
-        ItemState: "unanswered" | "right" | "not_quite" | "partly" | "skipped";
+        ItemState: 'unanswered' | 'right' | 'not_quite' | 'partly' | 'skipped';
         /** @description One question or card. Never carries the correct answer, except `back` on flashcards. */
         SessionItem: {
             /** @description Index in the session. */
             id: number;
-            type: components["schemas"]["ItemType"];
+            type: components['schemas']['ItemType'];
             prompt: string;
             /** @description Present for `mcq`. */
             options?: string[];
@@ -1782,57 +1807,58 @@ export interface components {
             back?: string;
             marks: number;
             /** @enum {string} */
-            difficulty: "easy" | "medium" | "hard";
+            difficulty: 'easy' | 'medium' | 'hard';
             topic: string;
             sourceLabel: string;
-            state: components["schemas"]["ItemState"];
+            state: components['schemas']['ItemState'];
         };
         Session: {
             /** Format: uuid */
             id: string;
-            mode: components["schemas"]["StudyMode"];
+            mode: components['schemas']['StudyMode'];
             /**
-             * @description `failed` when generation failed or yielded fewer than 2 items. The token is refunded.
+             * @description `failed` when generation could not write the requested number of questions. The cost is refunded.
              * @enum {string}
              */
-            status: "generating" | "active" | "completed" | "failed" | "expired";
+            status: 'generating' | 'active' | 'completed' | 'failed' | 'expired';
             fileIds?: string[];
             requestedCount: number;
             generatedCount: number;
             currentIndex: number;
             /** @description Flashcards repeat missed cards in rounds (M07). */
             round?: number;
-            items: components["schemas"]["SessionItem"][];
+            items: components['schemas']['SessionItem'][];
             /** @description Modes this material supports, for the switch sheet (M03). */
-            switchableModes: components["schemas"]["StudyMode"][];
-            /**
-             * @description Tokens charged when the session started, whatever its length.
-             * @constant
-             */
-            cost: 1;
-            /** @description True once the start charge has been refunded. Happens at most once. */
+            switchableModes: components['schemas']['StudyMode'][];
+            /** @description Tokens charged, 1 per question. */
+            cost: number;
+            /** @description True once the start charge has been refunded. Only a failed generation refunds, and at most once. */
             refunded: boolean;
             /** @description Mock exam only. */
             timeLimitSeconds?: number;
             /** Format: date-time */
             expiresAt: string;
         };
-        AnswerRequest: {
-            itemId: number;
-            /** Format: date-time */
-            answeredAt: string;
-            answer?: string;
-            /**
-             * @description Flashcards.
-             * @enum {string}
-             */
-            outcome?: "know" | "missed";
-            dontKnow?: boolean;
-        } | unknown | unknown | unknown;
+        AnswerRequest:
+            | {
+                  itemId: number;
+                  /** Format: date-time */
+                  answeredAt: string;
+                  answer?: string;
+                  /**
+                   * @description Flashcards.
+                   * @enum {string}
+                   */
+                  outcome?: 'know' | 'missed';
+                  dontKnow?: boolean;
+              }
+            | unknown
+            | unknown
+            | unknown;
         Verdict: {
             itemId: number;
             /** @enum {string} */
-            result: "right" | "not_quite" | "partly" | "skipped";
+            result: 'right' | 'not_quite' | 'partly' | 'skipped';
             awardedMarks: number;
             maxMarks: number;
             correctAnswer: string;
@@ -1842,8 +1868,8 @@ export interface components {
                 reason: string;
             }[];
             examTip?: string;
-            source?: components["schemas"]["Citation"];
-            studyDay?: components["schemas"]["StudyDayEffect"];
+            source?: components['schemas']['Citation'];
+            studyDay?: components['schemas']['StudyDayEffect'];
         };
         /** @description Whether this call made today a study day. */
         StudyDayEffect: {
@@ -1857,15 +1883,15 @@ export interface components {
             id: string;
             /** Format: uuid */
             sessionId: string;
-            mode: components["schemas"]["StudyMode"];
+            mode: components['schemas']['StudyMode'];
             score: number;
             total: number;
             failedTopics: string[];
             sourceDocs: string[];
-            /** @description Tokens this session cost in the end, after any refund. Completion itself charges nothing. */
+            /** @description Tokens this session cost in the end, 1 per question, or 0 after a failed generation refund. Completion itself charges nothing. */
             charged: number;
             balance: number;
-            studyDay: components["schemas"]["StudyDayEffect"];
+            studyDay: components['schemas']['StudyDayEffect'];
             /** @description Present when this session reached a multiple of 7. */
             streakReward?: {
                 /** @example 10 */
@@ -1881,13 +1907,13 @@ export interface components {
             mimeType: string;
             sizeBytes: number;
             /** @enum {string} */
-            kind: "image" | "document" | "audio";
+            kind: 'image' | 'document' | 'audio';
             /**
              * @description Screens C05 to C08. Poll `getFile` until `ready` or `failed`.
              * @default ready
              * @enum {string}
              */
-            status: "uploading" | "reading" | "ready" | "failed";
+            status: 'uploading' | 'reading' | 'ready' | 'failed';
             pageCount?: number;
             courseId?: string | null;
             /** @description Found while reading (C07). Empty until `status` is `ready`. */
@@ -1913,7 +1939,7 @@ export interface components {
         ClaimRequest: {
             code: string;
             /** @enum {string} */
-            provider: "telegram" | "whatsapp";
+            provider: 'telegram' | 'whatsapp';
             /** @description Telegram numeric id, or the WhatsApp `wa_id` (digits, no plus). */
             providerUserId: string;
             displayName?: string;
@@ -1924,10 +1950,10 @@ export interface components {
             /** @description Never decreases. */
             longest: number;
             /** @enum {string} */
-            state: "none" | "active" | "at_risk";
+            state: 'none' | 'active' | 'at_risk';
             studiedToday: boolean;
         };
-        Streak: components["schemas"]["StreakSummary"] & {
+        Streak: components['schemas']['StreakSummary'] & {
             todayProgress: {
                 /** @description Prep questions answered, flashcards rated and Ask questions asked today, app and bots together. */
                 items: number;
@@ -1943,12 +1969,12 @@ export interface components {
                 daysToEarn: number | null;
             };
             /** @constant */
-            timezone: "Africa/Lagos";
+            timezone: 'Africa/Lagos';
             calendar: {
                 /** Format: date */
                 date: string;
                 /** @enum {string} */
-                state: "studied" | "frozen" | "missed" | "today" | "upcoming";
+                state: 'studied' | 'frozen' | 'missed' | 'today' | 'upcoming';
             }[];
             rewardProgress: {
                 daysToNextReward: number;
@@ -1961,11 +1987,11 @@ export interface components {
              * @description Which Home state to draw (B01 today, B02 new user, B03 chats but no notes, B04 exam week).
              * @enum {string}
              */
-            variant: "today" | "new_user" | "chats_no_notes" | "exam_week";
-            streak: components["schemas"]["StreakSummary"];
+            variant: 'today' | 'new_user' | 'chats_no_notes' | 'exam_week';
+            streak: components['schemas']['StreakSummary'];
             rank?: {
                 /** @enum {string} */
-                scope: "course" | "campus";
+                scope: 'course' | 'campus';
                 rank: number;
                 studyDays: number;
             } | null;
@@ -1984,7 +2010,7 @@ export interface components {
             resume?: {
                 /** Format: uuid */
                 sessionId: string;
-                mode: components["schemas"]["StudyMode"];
+                mode: components['schemas']['StudyMode'];
                 answered: number;
                 total: number;
             } | null;
@@ -2000,9 +2026,9 @@ export interface components {
             }[];
         };
         CourseMastery: {
-            course: components["schemas"]["Course"];
+            course: components['schemas']['Course'];
             mastery: number | null;
-            topics: components["schemas"]["TopicMastery"][];
+            topics: components['schemas']['TopicMastery'][];
         };
         TopicMastery: {
             id: string;
@@ -2019,10 +2045,10 @@ export interface components {
         };
         Leaderboard: {
             /** @enum {string} */
-            scope: "course" | "campus";
+            scope: 'course' | 'campus';
             courseId?: string;
             /** @enum {string} */
-            status: "open" | "not_open";
+            status: 'open' | 'not_open';
             optedIn: boolean;
             optedInCount: number;
             /** @constant */
@@ -2052,7 +2078,7 @@ export interface components {
             /** Format: date */
             weekEnd: string;
             /** @enum {string} */
-            scope: "course" | "campus";
+            scope: 'course' | 'campus';
             rank: number | null;
             studyDays: number;
             optedIn: boolean;
@@ -2063,11 +2089,11 @@ export interface components {
              * @description A period that is not ready answers 409 `wrapped_not_ready` instead.
              * @constant
              */
-            status: "ready";
+            status: 'ready';
             studyDaysInPeriod: number;
             /** @constant */
             studyDaysNeeded: 5;
-            stats?: components["schemas"]["WrappedStats"];
+            stats?: components['schemas']['WrappedStats'];
         };
         WrappedStats: {
             /** @description Ask questions, from the app and from the bots. */
@@ -2089,7 +2115,7 @@ export interface components {
                 name: string;
                 accuracy: number;
             } | null;
-            mostUsedMode: components["schemas"]["StudyMode"];
+            mostUsedMode: components['schemas']['StudyMode'];
         };
         School: {
             id: string;
@@ -2097,15 +2123,15 @@ export interface components {
             /** @description ISO 3166-1 alpha-2. */
             country: string;
             /** @enum {string} */
-            kind: "university" | "polytechnic" | "college_of_education" | "other";
+            kind: 'university' | 'polytechnic' | 'college_of_education' | 'other';
         };
         Department: {
             id: string;
             name: string;
         };
         Profile: {
-            school: components["schemas"]["School"] | null;
-            department: components["schemas"]["Department"] | null;
+            school: components['schemas']['School'] | null;
+            department: components['schemas']['Department'] | null;
             level: number | null;
             /** Format: date */
             examDate: string | null;
@@ -2136,14 +2162,14 @@ export interface components {
             schoolId: string;
         };
         Enrolment: {
-            course: components["schemas"]["Course"];
+            course: components['schemas']['Course'];
             fileCount: number;
             mastery: number | null;
         };
         CourseDetail: {
-            course: components["schemas"]["Course"];
-            files: components["schemas"]["StoredFile"][];
-            topics: components["schemas"]["TopicMastery"][];
+            course: components['schemas']['Course'];
+            files: components['schemas']['StoredFile'][];
+            topics: components['schemas']['TopicMastery'][];
             /** Format: date */
             examDate: string | null;
         };
@@ -2157,7 +2183,7 @@ export interface components {
             /** Format: uuid */
             eventId: string;
             /** @enum {string} */
-            provider: "telegram" | "whatsapp";
+            provider: 'telegram' | 'whatsapp';
             providerUserId: string;
             /**
              * @description `ask_question` and `prep_answer` each count as one item toward the 3-item study day.
@@ -2165,7 +2191,7 @@ export interface components {
              *     2 and `answeredCount` equals it.
              * @enum {string}
              */
-            type: "ask_question" | "prep_answer" | "prep_session_finished";
+            type: 'ask_question' | 'prep_answer' | 'prep_session_finished';
             /** @description Required for `prep_session_finished`. */
             questionCount?: number;
             /** @description Required for `prep_session_finished`. */
@@ -2179,7 +2205,7 @@ export interface components {
         BotEventResult: {
             /** @description False when this `eventId` was already recorded. */
             accepted: boolean;
-            streak: components["schemas"]["StreakSummary"];
+            streak: components['schemas']['StreakSummary'];
             /** @description Present when this event earned the 7 day reward. */
             streakReward?: {
                 /** @example 10 */
@@ -2204,13 +2230,13 @@ export interface components {
                  *       "requestId": "req_01JC8Q2Z"
                  *     }
                  */
-                "application/problem+json": components["schemas"]["Problem"];
+                'application/problem+json': components['schemas']['Problem'];
             };
         };
         /** @description Too many requests. */
         RateLimited: {
             headers: {
-                "Retry-After": components["headers"]["RetryAfter"];
+                'Retry-After': components['headers']['RetryAfter'];
                 [name: string]: unknown;
             };
             content: {
@@ -2224,7 +2250,7 @@ export interface components {
                  *       "requestId": "req_01JC8Q30"
                  *     }
                  */
-                "application/problem+json": components["schemas"]["Problem"];
+                'application/problem+json': components['schemas']['Problem'];
             };
         };
         /** @description Not enough tokens. Nothing was charged. */
@@ -2243,7 +2269,7 @@ export interface components {
                  *       "requestId": "req_01JC8Q31"
                  *     }
                  */
-                "application/problem+json": components["schemas"]["Problem"];
+                'application/problem+json': components['schemas']['Problem'];
             };
         };
         /**
@@ -2268,13 +2294,13 @@ export interface components {
                  *       "mergeTokenExpiresAt": "2026-11-10T20:50:00Z"
                  *     }
                  */
-                "application/problem+json": components["schemas"]["MergeConflict"];
+                'application/problem+json': components['schemas']['MergeConflict'];
             };
         };
         /** @description Signed in. A `flo_rt` refresh cookie is set. */
         AuthSession: {
             headers: {
-                "Set-Cookie": components["headers"]["SetRefreshCookie"];
+                'Set-Cookie': components['headers']['SetRefreshCookie'];
                 [name: string]: unknown;
             };
             content: {
@@ -2307,7 +2333,7 @@ export interface components {
                  *       }
                  *     }
                  */
-                "application/json": components["schemas"]["AuthSession"];
+                'application/json': components['schemas']['AuthSession'];
             };
         };
     };
@@ -2357,13 +2383,13 @@ export interface operations {
                      *       "status": "ok"
                      *     }
                      */
-                    "application/json": {
+                    'application/json': {
                         /** @constant */
-                        status: "ok";
+                        status: 'ok';
                     };
                 };
             };
-            default: components["responses"]["Problem"];
+            default: components['responses']['Problem'];
         };
     };
     signInWithTelegramOidc: {
@@ -2382,17 +2408,17 @@ export interface operations {
                  *       "redirectUri": "https://app.florence.example/auth/telegram/callback"
                  *     }
                  */
-                "application/json": components["schemas"]["TelegramOidcRequest"];
+                'application/json': components['schemas']['TelegramOidcRequest'];
             };
         };
         responses: {
-            200: components["responses"]["AuthSession"];
-            400: components["responses"]["Problem"];
-            401: components["responses"]["Problem"];
-            409: components["responses"]["IdentityConflict"];
-            429: components["responses"]["RateLimited"];
-            503: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            200: components['responses']['AuthSession'];
+            400: components['responses']['Problem'];
+            401: components['responses']['Problem'];
+            409: components['responses']['IdentityConflict'];
+            429: components['responses']['RateLimited'];
+            503: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     createAuthChallenge: {
@@ -2410,7 +2436,7 @@ export interface operations {
                  *       "intent": "signin"
                  *     }
                  */
-                "application/json": components["schemas"]["ChallengeRequest"];
+                'application/json': components['schemas']['ChallengeRequest'];
             };
         };
         responses: {
@@ -2428,12 +2454,12 @@ export interface operations {
                      *       "expiresAt": "2026-11-10T21:10:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["Challenge"];
+                    'application/json': components['schemas']['Challenge'];
                 };
             };
-            401: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     getAuthChallengeStatus: {
@@ -2442,7 +2468,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description The 256-bit secret returned when the challenge was created. */
-                challengeId: components["parameters"]["ChallengeId"];
+                challengeId: components['parameters']['ChallengeId'];
             };
             cookie?: never;
         };
@@ -2460,12 +2486,12 @@ export interface operations {
                      *       "expiresAt": "2026-11-10T21:10:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["ChallengeStatus"];
+                    'application/json': components['schemas']['ChallengeStatus'];
                 };
             };
-            404: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            404: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     redeemAuthChallenge: {
@@ -2474,17 +2500,17 @@ export interface operations {
             header?: never;
             path: {
                 /** @description The 256-bit secret returned when the challenge was created. */
-                challengeId: components["parameters"]["ChallengeId"];
+                challengeId: components['parameters']['ChallengeId'];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            200: components["responses"]["AuthSession"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["IdentityConflict"];
-            410: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            200: components['responses']['AuthSession'];
+            404: components['responses']['Problem'];
+            409: components['responses']['IdentityConflict'];
+            410: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     startEmailAuth: {
@@ -2501,7 +2527,7 @@ export interface operations {
                  *       "email": "ada@student.unilag.edu.ng"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     /** Format: email */
                     email: string;
                 };
@@ -2515,9 +2541,9 @@ export interface operations {
                 };
                 content?: never;
             };
-            422: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            422: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     verifyEmailAuth: {
@@ -2535,7 +2561,7 @@ export interface operations {
                  *       "code": "482913"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     /** Format: email */
                     email: string;
                     code: string;
@@ -2543,11 +2569,11 @@ export interface operations {
             };
         };
         responses: {
-            200: components["responses"]["AuthSession"];
-            400: components["responses"]["Problem"];
-            409: components["responses"]["IdentityConflict"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            200: components['responses']['AuthSession'];
+            400: components['responses']['Problem'];
+            409: components['responses']['IdentityConflict'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     startWhatsAppAuth: {
@@ -2564,7 +2590,7 @@ export interface operations {
                  *       "phone": "0803 123 4567"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     phone: string;
                 };
             };
@@ -2583,7 +2609,7 @@ export interface operations {
                      *       "resendAfter": 30
                      *     }
                      */
-                    "application/json": {
+                    'application/json': {
                         /** @description Digits with country code, used for the verify call. */
                         phone: string;
                         /** @description The number as typed back to the student, for "We sent it on WhatsApp to ...". */
@@ -2593,10 +2619,10 @@ export interface operations {
                     };
                 };
             };
-            422: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            503: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            422: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            503: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     verifyWhatsAppAuth: {
@@ -2614,19 +2640,19 @@ export interface operations {
                  *       "code": "482913"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     phone: string;
                     code: string;
                 };
             };
         };
         responses: {
-            200: components["responses"]["AuthSession"];
-            400: components["responses"]["Problem"];
-            409: components["responses"]["IdentityConflict"];
-            422: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            200: components['responses']['AuthSession'];
+            400: components['responses']['Problem'];
+            409: components['responses']['IdentityConflict'];
+            422: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     signInWithGoogle: {
@@ -2643,17 +2669,17 @@ export interface operations {
                  *       "idToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NSJ9.c2ln"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     idToken: string;
                 };
             };
         };
         responses: {
-            200: components["responses"]["AuthSession"];
-            401: components["responses"]["Problem"];
-            409: components["responses"]["IdentityConflict"];
-            503: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            200: components['responses']['AuthSession'];
+            401: components['responses']['Problem'];
+            409: components['responses']['IdentityConflict'];
+            503: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     refreshSession: {
@@ -2668,7 +2694,7 @@ export interface operations {
             /** @description New access token. A new `flo_rt` cookie is set. */
             200: {
                 headers: {
-                    "Set-Cookie": components["headers"]["SetRefreshCookie"];
+                    'Set-Cookie': components['headers']['SetRefreshCookie'];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2678,11 +2704,11 @@ export interface operations {
                      *       "expiresIn": 900
                      *     }
                      */
-                    "application/json": components["schemas"]["AccessToken"];
+                    'application/json': components['schemas']['AccessToken'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     logout: {
@@ -2701,7 +2727,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            default: components["responses"]["Problem"];
+            default: components['responses']['Problem'];
         };
     };
     getMe: {
@@ -2739,11 +2765,11 @@ export interface operations {
                      *       "createdAt": "2026-11-10T20:00:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["Account"];
+                    'application/json': components['schemas']['Account'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     updateMe: {
@@ -2760,7 +2786,7 @@ export interface operations {
                  *       "username": "ada_o"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     displayName?: string;
                     username?: string | null;
                     /** @description IANA timezone, used for reminders. */
@@ -2788,13 +2814,13 @@ export interface operations {
                      *       "createdAt": "2026-11-10T20:00:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["Account"];
+                    'application/json': components['schemas']['Account'];
                 };
             };
-            401: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     unlinkIdentity: {
@@ -2815,10 +2841,10 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     mergeAccounts: {
@@ -2835,7 +2861,7 @@ export interface operations {
                  *       "mergeToken": "mrg_3QeM8r1sXk"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     mergeToken: string;
                 };
             };
@@ -2860,12 +2886,12 @@ export interface operations {
                      *       "createdAt": "2026-11-10T20:00:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["Account"];
+                    'application/json': components['schemas']['Account'];
                 };
             };
-            401: components["responses"]["Problem"];
-            410: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            410: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     startStudentVerification: {
@@ -2882,7 +2908,7 @@ export interface operations {
                  *       "schoolEmail": "ada@student.unilag.edu.ng"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     /** Format: email */
                     schoolEmail: string;
                 };
@@ -2896,10 +2922,10 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     confirmStudentVerification: {
@@ -2917,7 +2943,7 @@ export interface operations {
                  *       "code": "482913"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     /** Format: email */
                     schoolEmail: string;
                     code: string;
@@ -2939,13 +2965,13 @@ export interface operations {
                      *       "expiresAt": "2027-11-10T20:30:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["Student"];
+                    'application/json': components['schemas']['Student'];
                 };
             };
-            400: components["responses"]["Problem"];
-            401: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            400: components['responses']['Problem'];
+            401: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     getNotificationPreferences: {
@@ -2971,11 +2997,11 @@ export interface operations {
                      *       "streakNudges": true
                      *     }
                      */
-                    "application/json": components["schemas"]["NotificationPreferences"];
+                    'application/json': components['schemas']['NotificationPreferences'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     setNotificationPreferences: {
@@ -2995,7 +3021,7 @@ export interface operations {
                  *       "streakNudges": false
                  *     }
                  */
-                "application/json": components["schemas"]["NotificationPreferences"];
+                'application/json': components['schemas']['NotificationPreferences'];
             };
         };
         responses: {
@@ -3013,12 +3039,12 @@ export interface operations {
                      *       "streakNudges": false
                      *     }
                      */
-                    "application/json": components["schemas"]["NotificationPreferences"];
+                    'application/json': components['schemas']['NotificationPreferences'];
                 };
             };
-            401: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getTokenBalance: {
@@ -3041,21 +3067,21 @@ export interface operations {
                      *       "balance": 24
                      *     }
                      */
-                    "application/json": {
+                    'application/json': {
                         balance: number;
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     listLedger: {
         parameters: {
             query?: {
                 /** @description Opaque value from `nextCursor`. */
-                cursor?: components["parameters"]["Cursor"];
-                limit?: components["parameters"]["Limit"];
+                cursor?: components['parameters']['Cursor'];
+                limit?: components['parameters']['Limit'];
             };
             header?: never;
             path?: never;
@@ -3077,17 +3103,18 @@ export interface operations {
                      *           "delta": -1,
                      *           "reason": "chat_charge",
                      *           "balanceAfter": 24,
-                     *           "createdAt": "2026-11-10T20:40:00Z"
+                     *           "createdAt": "2026-11-10T20:40:00Z",
+                     *           "detail": "Mole concept questions"
                      *         }
                      *       ],
                      *       "nextCursor": null
                      *     }
                      */
-                    "application/json": components["schemas"]["LedgerPage"];
+                    'application/json': components['schemas']['LedgerPage'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     listBundles: {
@@ -3116,12 +3143,12 @@ export interface operations {
                      *       ]
                      *     }
                      */
-                    "application/json": {
-                        items: components["schemas"]["Bundle"][];
+                    'application/json': {
+                        items: components['schemas']['Bundle'][];
                     };
                 };
             };
-            default: components["responses"]["Problem"];
+            default: components['responses']['Problem'];
         };
     };
     createPurchase: {
@@ -3129,7 +3156,7 @@ export interface operations {
             query?: never;
             header?: {
                 /** @description Client-generated UUID. A retry with the same key returns the original result. */
-                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                'Idempotency-Key'?: components['parameters']['IdempotencyKey'];
             };
             path?: never;
             cookie?: never;
@@ -3141,7 +3168,7 @@ export interface operations {
                  *       "bundleId": "b_1000"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     bundleId: string;
                     /**
                      * Format: email
@@ -3152,7 +3179,7 @@ export interface operations {
                      * @default card
                      * @enum {string}
                      */
-                    method?: "card" | "bank_transfer";
+                    method?: 'card' | 'bank_transfer';
                 };
             };
         };
@@ -3170,13 +3197,13 @@ export interface operations {
                      *       "authorizationUrl": "https://checkout.paystack.com/abc123"
                      *     }
                      */
-                    "application/json": components["schemas"]["Purchase"];
+                    'application/json': components['schemas']['Purchase'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getPurchase: {
@@ -3202,20 +3229,20 @@ export interface operations {
                      *       "status": "success"
                      *     }
                      */
-                    "application/json": components["schemas"]["Purchase"];
+                    'application/json': components['schemas']['Purchase'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     listConversations: {
         parameters: {
             query?: {
                 /** @description Opaque value from `nextCursor`. */
-                cursor?: components["parameters"]["Cursor"];
-                limit?: components["parameters"]["Limit"];
+                cursor?: components['parameters']['Cursor'];
+                limit?: components['parameters']['Limit'];
             };
             header?: never;
             path?: never;
@@ -3242,14 +3269,14 @@ export interface operations {
                      *       "nextCursor": null
                      *     }
                      */
-                    "application/json": {
-                        items: components["schemas"]["Conversation"][];
+                    'application/json': {
+                        items: components['schemas']['Conversation'][];
                         nextCursor: string | null;
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     createConversation: {
@@ -3261,12 +3288,12 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
+                'application/json': {
                     /**
                      * @default ask
                      * @enum {string}
                      */
-                    mode?: "ask" | "prep";
+                    mode?: 'ask' | 'prep';
                 };
             };
         };
@@ -3285,11 +3312,11 @@ export interface operations {
                      *       "lastMessageAt": null
                      *     }
                      */
-                    "application/json": components["schemas"]["Conversation"];
+                    'application/json': components['schemas']['Conversation'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     deleteConversation: {
@@ -3297,7 +3324,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                conversationId: components["parameters"]["ConversationId"];
+                conversationId: components['parameters']['ConversationId'];
             };
             cookie?: never;
         };
@@ -3310,9 +3337,9 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     renameConversation: {
@@ -3320,7 +3347,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                conversationId: components["parameters"]["ConversationId"];
+                conversationId: components['parameters']['ConversationId'];
             };
             cookie?: never;
         };
@@ -3331,7 +3358,7 @@ export interface operations {
                  *       "title": "Cell respiration revision"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     title: string;
                 };
             };
@@ -3351,24 +3378,24 @@ export interface operations {
                      *       "lastMessageAt": "2026-11-10T20:41:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["Conversation"];
+                    'application/json': components['schemas']['Conversation'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     listMessages: {
         parameters: {
             query?: {
                 /** @description Opaque value from `nextCursor`. */
-                cursor?: components["parameters"]["Cursor"];
-                limit?: components["parameters"]["Limit"];
+                cursor?: components['parameters']['Cursor'];
+                limit?: components['parameters']['Limit'];
             };
             header?: never;
             path: {
-                conversationId: components["parameters"]["ConversationId"];
+                conversationId: components['parameters']['ConversationId'];
             };
             cookie?: never;
         };
@@ -3395,15 +3422,15 @@ export interface operations {
                      *       "nextCursor": null
                      *     }
                      */
-                    "application/json": {
-                        items: components["schemas"]["Message"][];
+                    'application/json': {
+                        items: components['schemas']['Message'][];
                         nextCursor: string | null;
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     sendMessage: {
@@ -3411,10 +3438,10 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Client-generated UUID. A retry with the same key never charges twice. */
-                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+                'Idempotency-Key': components['parameters']['IdempotencyKeyRequired'];
             };
             path: {
-                conversationId: components["parameters"]["ConversationId"];
+                conversationId: components['parameters']['ConversationId'];
             };
             cookie?: never;
         };
@@ -3428,7 +3455,7 @@ export interface operations {
                  *       ]
                  *     }
                  */
-                "application/json": components["schemas"]["SendMessageRequest"];
+                'application/json': components['schemas']['SendMessageRequest'];
             };
         };
         responses: {
@@ -3448,7 +3475,7 @@ export interface operations {
                      *     event: message.end
                      *     data: {"messageId":"5e2d7a90-1c34-4b8f-a6d2-9f0e1b3c4d58","balance":22}
                      */
-                    "text/event-stream": string;
+                    'text/event-stream': string;
                     /**
                      * @example {
                      *       "id": "5e2d7a90-1c34-4b8f-a6d2-9f0e1b3c4d58",
@@ -3459,26 +3486,26 @@ export interface operations {
                      *       "createdAt": "2026-11-10T20:41:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["Message"];
+                    'application/json': components['schemas']['Message'];
                 };
             };
-            401: components["responses"]["Problem"];
-            402: components["responses"]["InsufficientTokens"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            402: components['responses']['InsufficientTokens'];
+            404: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     listSessions: {
         parameters: {
             query?: {
                 /** @description Opaque value from `nextCursor`. */
-                cursor?: components["parameters"]["Cursor"];
-                limit?: components["parameters"]["Limit"];
-                mode?: components["schemas"]["StudyMode"];
-                status?: "active" | "completed";
+                cursor?: components['parameters']['Cursor'];
+                limit?: components['parameters']['Limit'];
+                mode?: components['schemas']['StudyMode'];
+                status?: 'active' | 'completed';
             };
             header?: never;
             path?: never;
@@ -3492,14 +3519,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        items: components["schemas"]["Session"][];
+                    'application/json': {
+                        items: components['schemas']['Session'][];
                         nextCursor: string | null;
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     createSession: {
@@ -3520,26 +3547,26 @@ export interface operations {
                  *       "questionCount": 10
                  *     }
                  */
-                "application/json": components["schemas"]["CreateSessionRequest"];
+                'application/json': components['schemas']['CreateSessionRequest'];
             };
         };
         responses: {
-            /** @description Accepted. 1 token charged. */
+            /** @description Accepted. 1 token per question charged. */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Session"];
+                    'application/json': components['schemas']['Session'];
                 };
             };
-            401: components["responses"]["Problem"];
-            402: components["responses"]["InsufficientTokens"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            402: components['responses']['InsufficientTokens'];
+            404: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     getSession: {
@@ -3547,7 +3574,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                sessionId: components["parameters"]["SessionId"];
+                sessionId: components['parameters']['SessionId'];
             };
             cookie?: never;
         };
@@ -3559,12 +3586,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Session"];
+                    'application/json': components['schemas']['Session'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     exitSession: {
@@ -3572,7 +3599,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                sessionId: components["parameters"]["SessionId"];
+                sessionId: components['parameters']['SessionId'];
             };
             cookie?: never;
         };
@@ -3585,9 +3612,9 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     switchSessionMode: {
@@ -3595,7 +3622,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                sessionId: components["parameters"]["SessionId"];
+                sessionId: components['parameters']['SessionId'];
             };
             cookie?: never;
         };
@@ -3606,8 +3633,8 @@ export interface operations {
                  *       "mode": "flashcards"
                  *     }
                  */
-                "application/json": {
-                    mode: components["schemas"]["StudyMode"];
+                'application/json': {
+                    mode: components['schemas']['StudyMode'];
                 };
             };
         };
@@ -3618,14 +3645,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Session"];
+                    'application/json': components['schemas']['Session'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     submitAnswer: {
@@ -3633,10 +3660,10 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Client-generated UUID. A retry with the same key never charges twice. */
-                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+                'Idempotency-Key': components['parameters']['IdempotencyKeyRequired'];
             };
             path: {
-                sessionId: components["parameters"]["SessionId"];
+                sessionId: components['parameters']['SessionId'];
             };
             cookie?: never;
         };
@@ -3649,7 +3676,7 @@ export interface operations {
                  *       "answeredAt": "2026-11-11T09:15:00Z"
                  *     }
                  */
-                "application/json": components["schemas"]["AnswerRequest"];
+                'application/json': components['schemas']['AnswerRequest'];
             };
         };
         responses: {
@@ -3659,14 +3686,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Verdict"];
+                    'application/json': components['schemas']['Verdict'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     completeSession: {
@@ -3674,7 +3701,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                sessionId: components["parameters"]["SessionId"];
+                sessionId: components['parameters']['SessionId'];
             };
             cookie?: never;
         };
@@ -3686,12 +3713,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SessionResult"];
+                    'application/json': components['schemas']['SessionResult'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     listMistakes: {
@@ -3699,7 +3726,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                sessionId: components["parameters"]["SessionId"];
+                sessionId: components['parameters']['SessionId'];
             };
             cookie?: never;
         };
@@ -3711,18 +3738,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         items: {
-                            item: components["schemas"]["SessionItem"];
+                            item: components['schemas']['SessionItem'];
                             yourAnswer: string | null;
-                            verdict: components["schemas"]["Verdict"];
+                            verdict: components['schemas']['Verdict'];
                         }[];
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     retryWrongItems: {
@@ -3730,33 +3757,33 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                sessionId: components["parameters"]["SessionId"];
+                sessionId: components['parameters']['SessionId'];
             };
             cookie?: never;
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    mode?: components["schemas"]["StudyMode"];
+                'application/json': {
+                    mode?: components['schemas']['StudyMode'];
                 };
             };
         };
         responses: {
-            /** @description The new session. 1 token charged. */
+            /** @description The new session. 1 token per item charged. */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Session"];
+                    'application/json': components['schemas']['Session'];
                 };
             };
-            401: components["responses"]["Problem"];
-            402: components["responses"]["InsufficientTokens"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            402: components['responses']['InsufficientTokens'];
+            404: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getSessionShareImage: {
@@ -3766,7 +3793,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                sessionId: components["parameters"]["SessionId"];
+                sessionId: components['parameters']['SessionId'];
             };
             cookie?: never;
         };
@@ -3778,12 +3805,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "image/png": string;
+                    'image/png': string;
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     listFiles: {
@@ -3815,13 +3842,13 @@ export interface operations {
                      *       ]
                      *     }
                      */
-                    "application/json": {
-                        items: components["schemas"]["StoredFile"][];
+                    'application/json': {
+                        items: components['schemas']['StoredFile'][];
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     uploadFile: {
@@ -3833,7 +3860,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": {
+                'multipart/form-data': {
                     /** @description One file, or the field repeated once per page photo (up to 30). */
                     pages: string | string[];
                     /** @description Attach the material to a course. */
@@ -3860,14 +3887,14 @@ export interface operations {
                      *       "createdAt": "2026-11-10T20:10:00Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["StoredFile"];
+                    'application/json': components['schemas']['StoredFile'];
                 };
             };
-            401: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            413: components["responses"]["Problem"];
-            415: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            413: components['responses']['Problem'];
+            415: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getFile: {
@@ -3875,7 +3902,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                fileId: components["parameters"]["FileId"];
+                fileId: components['parameters']['FileId'];
             };
             cookie?: never;
         };
@@ -3887,12 +3914,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StoredFile"];
+                    'application/json': components['schemas']['StoredFile'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     deleteFile: {
@@ -3900,7 +3927,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                fileId: components["parameters"]["FileId"];
+                fileId: components['parameters']['FileId'];
             };
             cookie?: never;
         };
@@ -3913,9 +3940,9 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getFileContent: {
@@ -3923,7 +3950,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                fileId: components["parameters"]["FileId"];
+                fileId: components['parameters']['FileId'];
             };
             cookie?: never;
         };
@@ -3938,9 +3965,9 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getVapidKey: {
@@ -3963,12 +3990,12 @@ export interface operations {
                      *       "publicKey": "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U"
                      *     }
                      */
-                    "application/json": {
+                    'application/json': {
                         publicKey: string;
                     };
                 };
             };
-            default: components["responses"]["Problem"];
+            default: components['responses']['Problem'];
         };
     };
     createPushSubscription: {
@@ -3989,7 +4016,7 @@ export interface operations {
                  *       }
                  *     }
                  */
-                "application/json": components["schemas"]["PushSubscriptionRequest"];
+                'application/json': components['schemas']['PushSubscriptionRequest'];
             };
         };
         responses: {
@@ -4004,15 +4031,15 @@ export interface operations {
                      *       "id": "4b6d8f0a-2c4e-4a68-8b0d-f1a3c5e7d9b2"
                      *     }
                      */
-                    "application/json": {
+                    'application/json': {
                         /** Format: uuid */
                         id: string;
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     deletePushSubscription: {
@@ -4033,9 +4060,9 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getHome: {
@@ -4053,11 +4080,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Home"];
+                    'application/json': components['schemas']['Home'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getProgress: {
@@ -4075,11 +4102,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProgressOverview"];
+                    'application/json': components['schemas']['ProgressOverview'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getCourseMastery: {
@@ -4087,7 +4114,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                courseId: components["parameters"]["CourseId"];
+                courseId: components['parameters']['CourseId'];
             };
             cookie?: never;
         };
@@ -4099,12 +4126,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CourseMastery"];
+                    'application/json': components['schemas']['CourseMastery'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getFactOfTheDay: {
@@ -4122,11 +4149,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Fact"];
+                    'application/json': components['schemas']['Fact'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getStreak: {
@@ -4147,17 +4174,17 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Streak"];
+                    'application/json': components['schemas']['Streak'];
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getLeaderboard: {
         parameters: {
             query: {
-                scope: "course" | "campus";
+                scope: 'course' | 'campus';
                 /** @description Required when `scope` is `course`. */
                 courseId?: string;
             };
@@ -4173,12 +4200,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Leaderboard"];
+                    'application/json': components['schemas']['Leaderboard'];
                 };
             };
-            401: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     setLeaderboardOptIn: {
@@ -4196,7 +4223,7 @@ export interface operations {
                  *       "displayName": "Ada O"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     optedIn: boolean;
                     displayName?: string;
                 };
@@ -4209,15 +4236,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         optedIn: boolean;
                         displayName: string | null;
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getWeeklyResults: {
@@ -4240,13 +4267,13 @@ export interface operations {
                      *       "items": []
                      *     }
                      */
-                    "application/json": {
-                        items: components["schemas"]["WeeklyResult"][];
+                    'application/json': {
+                        items: components['schemas']['WeeklyResult'][];
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getWrapped: {
@@ -4267,10 +4294,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Wrapped"];
+                    'application/json': components['schemas']['Wrapped'];
                 };
             };
-            401: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
             /** @description Not ready. Fewer than 5 study days in the period, or recaps are not built yet. */
             409: {
                 headers: {
@@ -4287,17 +4314,25 @@ export interface operations {
                      *       "requestId": "req_01JC8Q40"
                      *     }
                      */
-                    "application/problem+json": components["schemas"]["Problem"];
+                    'application/problem+json': components['schemas']['Problem'];
                 };
             };
-            default: components["responses"]["Problem"];
+            default: components['responses']['Problem'];
         };
     };
     getWrappedShareImage: {
         parameters: {
             query: {
                 period: string;
-                card?: "cover" | "questions" | "right_wrong" | "sessions" | "streak" | "topics" | "mode" | "summary";
+                card?:
+                    | 'cover'
+                    | 'questions'
+                    | 'right_wrong'
+                    | 'sessions'
+                    | 'streak'
+                    | 'topics'
+                    | 'mode'
+                    | 'summary';
                 showScore?: boolean;
             };
             header?: never;
@@ -4312,13 +4347,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "image/png": string;
+                    'image/png': string;
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     searchSchools: {
@@ -4340,12 +4375,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        items: components["schemas"]["School"][];
+                    'application/json': {
+                        items: components['schemas']['School'][];
                     };
                 };
             };
-            default: components["responses"]["Problem"];
+            default: components['responses']['Problem'];
         };
     };
     listDepartments: {
@@ -4365,13 +4400,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        items: components["schemas"]["Department"][];
+                    'application/json': {
+                        items: components['schemas']['Department'][];
                     };
                 };
             };
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     updateProfile: {
@@ -4383,7 +4418,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProfileUpdate"];
+                'application/json': components['schemas']['ProfileUpdate'];
             };
         };
         responses: {
@@ -4393,13 +4428,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Profile"];
+                    'application/json': components['schemas']['Profile'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     listMyCourses: {
@@ -4417,13 +4452,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        items: components["schemas"]["Enrolment"][];
+                    'application/json': {
+                        items: components['schemas']['Enrolment'][];
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     enrolInCourse: {
@@ -4441,7 +4476,7 @@ export interface operations {
                  *       "title": "Cell biology"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     code: string;
                     title?: string;
                 };
@@ -4454,13 +4489,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Enrolment"];
+                    'application/json': components['schemas']['Enrolment'];
                 };
             };
-            401: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getCourse: {
@@ -4468,7 +4503,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                courseId: components["parameters"]["CourseId"];
+                courseId: components['parameters']['CourseId'];
             };
             cookie?: never;
         };
@@ -4480,12 +4515,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CourseDetail"];
+                    'application/json': components['schemas']['CourseDetail'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     leaveCourse: {
@@ -4493,7 +4528,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                courseId: components["parameters"]["CourseId"];
+                courseId: components['parameters']['CourseId'];
             };
             cookie?: never;
         };
@@ -4506,9 +4541,9 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     createGuestSession: {
@@ -4520,7 +4555,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
+                'application/json': {
                     /** @description Browser fingerprint from the client. Stored only as a keyed hash. */
                     visitorId?: string;
                 };
@@ -4533,11 +4568,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GuestSession"];
+                    'application/json': components['schemas']['GuestSession'];
                 };
             };
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     sendGuestMessage: {
@@ -4554,7 +4589,7 @@ export interface operations {
                  *       "text": "Why does protein building slow down later?"
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     text: string;
                 };
             };
@@ -4566,12 +4601,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/event-stream": string;
+                    'text/event-stream': string;
                 };
             };
-            401: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     claimGuestChat: {
@@ -4583,7 +4618,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
+                'application/json': {
                     guestToken: string;
                 };
             };
@@ -4595,12 +4630,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Conversation"];
+                    'application/json': components['schemas']['Conversation'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     setMessageSaved: {
@@ -4614,7 +4649,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
+                'application/json': {
                     saved: boolean;
                 };
             };
@@ -4627,17 +4662,17 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     listSavedAnswers: {
         parameters: {
             query?: {
                 /** @description Opaque value from `nextCursor`. */
-                cursor?: components["parameters"]["Cursor"];
-                limit?: components["parameters"]["Limit"];
+                cursor?: components['parameters']['Cursor'];
+                limit?: components['parameters']['Limit'];
             };
             header?: never;
             path?: never;
@@ -4651,14 +4686,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        items: components["schemas"]["Message"][];
+                    'application/json': {
+                        items: components['schemas']['Message'][];
                         nextCursor: string | null;
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getReferral: {
@@ -4676,7 +4711,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         code: string;
                         /** Format: uri */
                         link: string;
@@ -4686,8 +4721,8 @@ export interface operations {
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     requestDataExport: {
@@ -4706,9 +4741,9 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Problem"];
-            429: components["responses"]["RateLimited"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            429: components['responses']['RateLimited'];
+            default: components['responses']['Problem'];
         };
     };
     requestAccountDeletion: {
@@ -4726,14 +4761,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         /** Format: date-time */
                         deletesAt: string;
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getServiceStatus: {
@@ -4751,7 +4786,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    'application/json': {
                         maintenance: boolean;
                         message?: string | null;
                         minClientVersion: string;
@@ -4765,7 +4800,7 @@ export interface operations {
                     };
                 };
             };
-            default: components["responses"]["Problem"];
+            default: components['responses']['Problem'];
         };
     };
     claimAuthChallenge: {
@@ -4785,7 +4820,7 @@ export interface operations {
                  *       "displayName": "Ada"
                  *     }
                  */
-                "application/json": components["schemas"]["ClaimRequest"];
+                'application/json': components['schemas']['ClaimRequest'];
             };
         };
         responses: {
@@ -4800,16 +4835,16 @@ export interface operations {
                      *       "status": "verified"
                      *     }
                      */
-                    "application/json": {
+                    'application/json': {
                         /** @constant */
-                        status: "verified";
+                        status: 'verified';
                     };
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            409: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     recordBotEvent: {
@@ -4830,7 +4865,7 @@ export interface operations {
                  *       "occurredAt": "2026-11-11T09:15:00Z"
                  *     }
                  */
-                "application/json": components["schemas"]["BotEvent"];
+                'application/json': components['schemas']['BotEvent'];
             };
         };
         responses: {
@@ -4840,18 +4875,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BotEventResult"];
+                    'application/json': components['schemas']['BotEventResult'];
                 };
             };
-            401: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            422: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     getBotStreak: {
         parameters: {
             query: {
-                provider: "telegram" | "whatsapp";
+                provider: 'telegram' | 'whatsapp';
                 providerUserId: string;
             };
             header?: never;
@@ -4866,12 +4901,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StreakSummary"];
+                    'application/json': components['schemas']['StreakSummary'];
                 };
             };
-            401: components["responses"]["Problem"];
-            404: components["responses"]["Problem"];
-            default: components["responses"]["Problem"];
+            401: components['responses']['Problem'];
+            404: components['responses']['Problem'];
+            default: components['responses']['Problem'];
         };
     };
     receivePaystackEvent: {
@@ -4892,7 +4927,7 @@ export interface operations {
                  *       }
                  *     }
                  */
-                "application/json": {
+                'application/json': {
                     /** @example charge.success */
                     event: string;
                     data: {
@@ -4916,7 +4951,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["Problem"];
+                    'application/problem+json': components['schemas']['Problem'];
                 };
             };
         };

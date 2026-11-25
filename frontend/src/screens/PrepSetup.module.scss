@@ -1,0 +1,267 @@
+@use '../styles/type';
+
+.page {
+    display: flex;
+    flex-direction: column;
+    max-width: 640px;
+    min-height: 100dvh;
+    margin: 0 auto;
+    background: var(--web-bg);
+    color: var(--web-text);
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 4px 16px 24px;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px calc(34px + env(safe-area-inset-bottom));
+}
+
+.title {
+    @include type.display-m;
+}
+
+.lead {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.label {
+    @include type.label;
+    margin-top: 4px;
+    color: var(--web-text-2);
+}
+
+.error {
+    @include type.caption;
+    color: var(--web-error);
+}
+
+.note {
+    @include type.caption;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--web-text-2);
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+.alert {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--app-radius-pill);
+    background: var(--web-error-tint);
+    color: var(--web-error);
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.group {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--web-line);
+    border-radius: var(--app-radius-card);
+    background: var(--web-surface);
+    list-style: none;
+
+    li + li {
+        border-top: 1px solid var(--web-line);
+    }
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 16px;
+    color: var(--web-text);
+    text-align: left;
+
+    &:focus-visible {
+        outline: 2px solid var(--web-brand);
+        outline-offset: -2px;
+    }
+}
+
+.rowIcon {
+    color: var(--web-text);
+}
+
+.rowText {
+    @include type.body;
+    flex: 1;
+}
+
+.rowValue {
+    @include type.secondary;
+    color: var(--web-text-2);
+}
+
+.rowCaret {
+    color: var(--web-text-2);
+}
+
+.tile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 98px;
+    padding: 16px;
+    border: 1px solid var(--web-line);
+    border-radius: var(--app-radius-card);
+    background: var(--web-surface);
+    color: var(--web-text);
+    text-align: left;
+
+    &:focus-visible {
+        outline: 2px solid var(--web-brand);
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        cursor: progress;
+    }
+}
+
+.tileOn {
+    border: 2px solid var(--web-brand);
+    background: var(--web-blue-tint);
+
+    .tileIcon {
+        background: var(--web-brand);
+        color: var(--web-on-brand);
+    }
+}
+
+.tileIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--app-radius-input);
+    background: var(--web-blue-tint);
+    color: var(--web-brand-text);
+
+    svg {
+        width: 22px;
+        height: 22px;
+    }
+}
+
+.tileText {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.tileTitle {
+    @include type.body-strong;
+}
+
+.tileBody {
+    @include type.caption;
+    color: var(--web-text-2);
+}
+
+.tileTime {
+    @include type.label;
+    flex-shrink: 0;
+    color: var(--web-text-2);
+}
+
+.tileCheck {
+    color: var(--web-brand);
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.choices {
+    display: flex;
+    gap: 10px;
+}
+
+.choice {
+    @include type.body-strong;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+    height: 52px;
+    border: 1.5px solid var(--web-line);
+    border-radius: var(--app-radius-pill);
+    background: var(--web-surface);
+    color: var(--web-text);
+}
+
+.choiceOn {
+    border-color: var(--web-brand);
+    background: var(--web-brand);
+    color: var(--web-on-brand);
+}
+
+.topicList {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 50dvh;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.topic {
+    @include type.body;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+
+    input {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--web-brand);
+    }
+}
+
+.sheetActions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+}

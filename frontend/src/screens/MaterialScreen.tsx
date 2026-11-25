@@ -1,8 +1,7 @@
-import { isOutOfTokens, useOutOfTokens } from '../components/OutOfTokens';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api, ApiError, deleteFile, getFile, listCourses, type StoredFile } from '../api';
+import { ApiError, deleteFile, getFile, listCourses, type StoredFile } from '../api';
 import { AppBar } from '../components/AppBar';
 import { Icon } from '../components/Icon';
 import { Button, Dialog, ErrorState, Skeleton, useToast } from '../components/ui';
@@ -32,14 +31,12 @@ function Reading() {
 }
 
 export function MaterialScreen() {
-    const outOfTokens = useOutOfTokens();
     const { id = '' } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
     const queryClient = useQueryClient();
     const [confirm, setConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
-    const [starting, setStarting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const file = useQuery({
         queryKey: ['file', id],
@@ -65,19 +62,7 @@ export function MaterialScreen() {
         }
     };
 
-    const practise = async () => {
-        setStarting(true);
-        setError(null);
-        try {
-            const session = await api.createPrepSession([id], 10);
-            navigate(`/prep/${session.id}`);
-        } catch (err) {
-            if (isOutOfTokens(err)) outOfTokens({ what: 'A prep session', cost: 1 });
-            else setError(err instanceof ApiError ? err.message : 'Could not start a session.');
-        } finally {
-            setStarting(false);
-        }
-    };
+    const practise = () => navigate(`/prep/new?file=${encodeURIComponent(id)}`);
 
     const deleteButton = (
         <button type="button" className={s.danger} onClick={() => setConfirm(true)}>
@@ -156,7 +141,7 @@ export function MaterialScreen() {
                 </main>
                 <div className={s.spacer} />
                 <div className={s.footer}>
-                    <Button block loading={starting} onClick={() => void practise()}>
+                    <Button block onClick={practise}>
                         Practise from this file
                     </Button>
                     {deleteButton}
