@@ -128,7 +128,8 @@ export function PrepSessionScreen() {
             <div className={s.page}>
                 <main className={s.fallback}>
                     <p role="alert">
-                        Florence couldn’t write questions from this file. Your token was refunded.
+                        Florence couldn’t write {session.cost} questions from this file. Your tokens
+                        are back.
                     </p>
                     <Button block onClick={() => navigate('/prep')}>
                         Back to Prep
@@ -514,7 +515,8 @@ export function PrepSessionScreen() {
 
             <Dialog open={leaving} onClose={() => setLeaving(false)} title="Leave this session?">
                 <p className={s.dialogBody}>
-                    Your answers so far are saved. You can pick up where you left off from Home.
+                    Your answers so far are saved, and you can pick up from Home. Tokens already
+                    spent on this session ({session.cost}) are not refunded.
                 </p>
                 <div className={s.dialogActions}>
                     <Button block onClick={() => setLeaving(false)}>

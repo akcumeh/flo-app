@@ -3,6 +3,3 @@ dist
 dev-dist
 coverage
 package-lock.json
-src/api/schema.d.ts
-*.md
-public

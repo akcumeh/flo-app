@@ -9,7 +9,7 @@
         "preview": "vite preview",
         "test": "vitest run",
         "test:watch": "vitest",
-        "types:api": "openapi-typescript ../backend/openapi.yaml -o src/api/schema.d.ts",
+        "types:api": "openapi-typescript ../backend/openapi.yaml -o src/api/schema.d.ts && prettier --write src/api/schema.d.ts",
         "lint": "eslint . && prettier --check .",
         "format": "prettier --write . && eslint --fix ."
     },

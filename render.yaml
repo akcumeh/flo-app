@@ -1,59 +1,59 @@
 services:
-  - type: web
-    name: flo-app
-    runtime: docker
-    plan: free
-    region: frankfurt
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    healthCheckPath: /v1/health
-    autoDeploy: true
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: MAIL_DRIVER
-        value: disabled
-      - key: DB_POOL_MAX
-        value: "5"
-      - key: WEB_ORIGIN
-        value: https://app.myflorence.site
-      - key: APP_URL
-        value: https://app.myflorence.site
-      - key: PUBLIC_API_URL
-        value: https://app.myflorence.site
-      - key: TELEGRAM_BOT_USERNAME
-        value: FlorenceAIBot
-      - key: WHATSAPP_BUSINESS_NUMBER
-        value: "2347066975729"
-      - key: STORAGE_BUCKET
-        value: materials
-      - key: VITE_GOOGLE_CLIENT_ID
-        value: 190488316230-n3mb7lph9t77kmeug2ji3dhm66ph84s7.apps.googleusercontent.com
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: CODE_PEPPER
-        sync: false
-      - key: DATABASE_URL
-        sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: INTERNAL_API_SECRET
-        sync: false
-      - key: JWT_SECRET
-        sync: false
-      - key: PAYSTACK_SECRET_KEY
-        sync: false
-      - key: SUPABASE_SECRET_KEY
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: VAPID_PRIVATE_KEY
-        sync: false
-      - key: VAPID_PUBLIC_KEY
-        sync: false
-      - key: WHATSAPP_ACCESS_TOKEN
-        sync: false
-      - key: WHATSAPP_PHONE_NUMBER_ID
-        sync: false
+    - type: web
+      name: flo-app
+      runtime: docker
+      plan: free
+      region: frankfurt
+      dockerfilePath: ./Dockerfile
+      dockerContext: .
+      healthCheckPath: /v1/health
+      autoDeploy: true
+      envVars:
+          - key: NODE_ENV
+            value: production
+          - key: MAIL_DRIVER
+            value: disabled
+          - key: DB_POOL_MAX
+            value: '5'
+          - key: WEB_ORIGIN
+            value: https://app.myflorence.site
+          - key: APP_URL
+            value: https://app.myflorence.site
+          - key: PUBLIC_API_URL
+            value: https://app.myflorence.site
+          - key: TELEGRAM_BOT_USERNAME
+            value: FlorenceAIBot
+          - key: WHATSAPP_BUSINESS_NUMBER
+            value: '2347066975729'
+          - key: STORAGE_BUCKET
+            value: materials
+          - key: VITE_GOOGLE_CLIENT_ID
+            value: 190488316230-n3mb7lph9t77kmeug2ji3dhm66ph84s7.apps.googleusercontent.com
+          - key: ANTHROPIC_API_KEY
+            sync: false
+          - key: CODE_PEPPER
+            sync: false
+          - key: DATABASE_URL
+            sync: false
+          - key: GOOGLE_CLIENT_ID
+            sync: false
+          - key: INTERNAL_API_SECRET
+            sync: false
+          - key: JWT_SECRET
+            sync: false
+          - key: PAYSTACK_SECRET_KEY
+            sync: false
+          - key: SUPABASE_SECRET_KEY
+            sync: false
+          - key: SUPABASE_URL
+            sync: false
+          - key: TELEGRAM_BOT_TOKEN
+            sync: false
+          - key: VAPID_PRIVATE_KEY
+            sync: false
+          - key: VAPID_PUBLIC_KEY
+            sync: false
+          - key: WHATSAPP_ACCESS_TOKEN
+            sync: false
+          - key: WHATSAPP_PHONE_NUMBER_ID
+            sync: false
